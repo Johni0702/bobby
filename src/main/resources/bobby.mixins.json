@@ -1,0 +1,15 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "de.johni0702.minecraft.bobby.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "BiomeAccessAccessor"
+  ],
+  "client": [
+    "ClientChunkManagerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

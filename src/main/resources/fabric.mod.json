@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "id": "bobby",
+  "version": "${version}",
+
+  "name": "Bobby",
+  "description": "Allows for render distances greater than the server's view-distance setting.",
+  "authors": [
+    "johni0702"
+  ],
+  "contact": {
+    "homepage": "https://github.com/johni0702/bobby",
+    "sources": "https://github.com/johni0702/bobby"
+  },
+
+  "license": "GPL-3.0-or-later",
+  "icon": "assets/bobby/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+  },
+  "mixins": [
+    "bobby.mixins.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.7.4",
+    "minecraft": "1.16.x"
+  },
+  "suggests": {
+  },
+
+  "custom": {
+    "modmenu:clientsideOnly": true
+  }
+}
