@@ -1,6 +1,7 @@
 package de.johni0702.minecraft.bobby.mixin;
 
 import de.johni0702.minecraft.bobby.FakeChunkManager;
+import de.johni0702.minecraft.bobby.FakeChunkStorage;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
@@ -30,6 +31,9 @@ public abstract class ClientChunkManagerMixin {
 	@Shadow public abstract LightingProvider getLightingProvider();
 
 	private FakeChunkManager bobbyChunkManager;
+	// Cache of chunk which was just unloaded so we can immediately
+	// load it again without having to wait for the storage io worker.
+	private @Nullable CompoundTag bobbyChunkReplacement;
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
@@ -61,14 +65,20 @@ public abstract class ClientChunkManagerMixin {
 		if (chunk == null) {
 			return;
 		}
-		bobbyChunkManager.getStorage().save(chunk, getLightingProvider());
+		FakeChunkStorage storage = bobbyChunkManager.getStorage();
+		CompoundTag tag = storage.serialize(chunk, getLightingProvider());
+		storage.save(chunk.getPos(), tag);
+		bobbyChunkReplacement = tag;
 	}
 
 	@Inject(method = "unload", at = @At("RETURN"))
 	private void bobbyReplaceChunk(int chunkX, int chunkZ, CallbackInfo ci) {
-		if (getChunk(chunkX, chunkX, ChunkStatus.FULL, false) == null) {
-			bobbyChunkManager.load(chunkX, chunkZ);
+	    CompoundTag tag = bobbyChunkReplacement;
+	    bobbyChunkReplacement = null;
+		if (tag == null || bobbyChunkManager.getChunk(chunkX, chunkZ) != null) {
+			return;
 		}
+		bobbyChunkManager.load(chunkX, chunkZ, tag, bobbyChunkManager.getStorage());
 	}
 
 	@Inject(method = "tick", at = @At("HEAD"))

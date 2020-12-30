@@ -41,20 +41,27 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         this.biomeSource = biomeSource;
     }
 
-    public void save(Chunk chunk, LightingProvider lightingProvider) {
+    public void save(ChunkPos pos, CompoundTag chunk) {
         CompoundTag tag = new CompoundTag();
         tag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
-        tag.put("Level", serialize(chunk, lightingProvider));
-        setTagAt(chunk.getPos(), tag);
+        tag.put("Level", chunk);
+        setTagAt(pos, tag);
     }
 
     public @Nullable WorldChunk load(ChunkPos pos, World world) throws IOException {
+        CompoundTag level = loadTag(pos);
+        if (level == null) {
+            return null;
+        }
+        return deserialize(pos, level, world);
+    }
+
+    public @Nullable CompoundTag loadTag(ChunkPos pos) throws IOException {
         CompoundTag tag = getNbt(pos);
         if (tag == null) {
             return null;
         }
-        CompoundTag level = tag.getCompound("Level");
-        return deserialize(pos, level, world);
+        return tag.getCompound("Level");
     }
 
     public CompoundTag serialize(Chunk chunk, LightingProvider lightingProvider) {

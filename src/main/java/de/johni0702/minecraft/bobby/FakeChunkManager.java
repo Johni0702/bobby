@@ -11,6 +11,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resource.DataPackSettings;
 import net.minecraft.resource.FileResourcePackProvider;
 import net.minecraft.resource.ResourceManager;
@@ -153,16 +154,27 @@ public class FakeChunkManager {
 
     public  @Nullable WorldChunk load(int x, int z) {
         ChunkPos chunkPos = new ChunkPos(x, z);
-
-        WorldChunk chunk = null;
+        CompoundTag tag;
         try {
-            chunk = storage.load(chunkPos, world);
-            if (chunk == null && fallbackStorage != null) {
-                chunk = fallbackStorage.load(chunkPos, world);
+            tag = storage.loadTag(chunkPos);
+            if (tag != null) {
+                return load(x, z, tag, storage);
+            }
+            if (fallbackStorage != null) {
+                tag = fallbackStorage.loadTag(chunkPos);
+                if (tag != null) {
+                    return load(x, z, tag, fallbackStorage);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return null;
+    }
+
+    public @Nullable WorldChunk load(int x, int z, CompoundTag tag, FakeChunkStorage storage) {
+        ChunkPos chunkPos = new ChunkPos(x, z);
+        WorldChunk chunk = storage.deserialize(chunkPos, tag, world);
         if (chunk == null) {
             return null;
         }
