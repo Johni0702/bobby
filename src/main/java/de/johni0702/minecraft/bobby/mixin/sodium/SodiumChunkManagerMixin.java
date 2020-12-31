@@ -55,7 +55,7 @@ public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
             suppressedListener = listener;
             listener = null;
 
-            bobbyChunkManager.unload(x, z);
+            bobbyChunkManager.unload(x, z, true);
         }
     }
 

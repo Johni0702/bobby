@@ -60,7 +60,7 @@ public abstract class ClientChunkManagerMixin {
 
 	@Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
 	private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
-	    bobbyChunkManager.unload(x, z);
+	    bobbyChunkManager.unload(x, z, true);
 	}
 
 	@Inject(method = "unload", at = @At("HEAD"))

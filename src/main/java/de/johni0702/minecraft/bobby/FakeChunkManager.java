@@ -183,7 +183,7 @@ public class FakeChunkManager {
 
         // Anything remaining in the set is no longer needed and can now be unloaded
         for (long chunkPos : toBeUnloaded) {
-            unload(ChunkPos.getPackedX(chunkPos), ChunkPos.getPackedZ(chunkPos));
+            unload(ChunkPos.getPackedX(chunkPos), ChunkPos.getPackedZ(chunkPos), false);
         }
         // Any jobs remaining in this set are no longer needed and can now be cancelled
         for (long chunkPos : toBeCancelled){
@@ -242,9 +242,9 @@ public class FakeChunkManager {
         return chunk;
     }
 
-    public void unload(int x, int z) {
+    public void unload(int x, int z, boolean willBeReplaced) {
         WorldChunk chunk = fakeChunks.remove(ChunkPos.toLong(x, z));
-        if (chunk != null) {
+        if (chunk != null && !willBeReplaced) {
             LightingProvider lightingProvider = clientChunkManager.getLightingProvider();
 
             for (int y = 0; y < 16; y++) {
@@ -253,6 +253,8 @@ public class FakeChunkManager {
             }
 
             lightingProvider.setColumnEnabled(new ChunkPos(x, z), false);
+        }
+        if (chunk != null) {
             world.unloadBlockEntities(chunk);
         }
     }
@@ -370,8 +372,8 @@ public class FakeChunkManager {
         }
 
         @Override
-        public void unload(int x, int z) {
-            super.unload(x, z);
+        public void unload(int x, int z, boolean willBeReplaced) {
+            super.unload(x, z, willBeReplaced);
 
             ChunkStatusListener listener = sodiumChunkManager.getListener();
             if (listener != null) {
