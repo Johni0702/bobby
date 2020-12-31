@@ -9,6 +9,7 @@
   ],
   "client": [
     "ClientChunkManagerMixin",
+    "ClientPlayNetworkHandlerMixin",
     "sodium.SodiumChunkManagerAccessor",
     "sodium.SodiumChunkManagerMixin"
   ],
