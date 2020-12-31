@@ -3,6 +3,7 @@ package de.johni0702.minecraft.bobby.mixin.sodium;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
 import de.johni0702.minecraft.bobby.mixin.ClientChunkManagerMixin;
+import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.SodiumChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundTag;
@@ -20,7 +21,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(SodiumChunkManager.class)
 public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
-    @Shadow @Final private WorldChunk emptyChunk;
+    @Shadow(remap = false) @Final private WorldChunk emptyChunk;
+    @Shadow(remap = false) private ChunkStatusListener listener;
+    @Shadow public abstract WorldChunk getChunk(int x, int z, ChunkStatus status, boolean create);
+
+    private ChunkStatusListener suppressedListener;
 
     @Override
     protected FakeChunkManager createBobbyChunkManager(ClientWorld world) {
@@ -43,7 +48,29 @@ public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
 
     @Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
     private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
-        bobbyChunkManager.unload(x, z);
+        if (bobbyChunkManager.getChunk(x, z) != null) {
+            // We'll be replacing a fake chunk with a real one.
+            // Suppress the chunk status listener so it does
+            // get removed before its re-rendered.
+            suppressedListener = listener;
+            listener = null;
+
+            bobbyChunkManager.unload(x, z);
+        }
+    }
+
+    @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
+    private void bobbyFakeChunkReplaced(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+        if (suppressedListener != null) {
+            listener = suppressedListener;
+            suppressedListener = null;
+
+            // However, if we failed to load the chunk from the packet for whatever reason,
+            // we need to notify the listener that the chunk has indeed been unloaded.
+            if (getChunk(x, z, ChunkStatus.FULL, false) == null) {
+                listener.onChunkRemoved(x, z);
+            }
+        }
     }
 
     @Inject(method = "unload", at = @At("HEAD"))
@@ -52,6 +79,13 @@ public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
         if (chunk == null) {
             return;
         }
+
+        // We'll be replacing a real chunk with a fake one.
+        // Suppress the chunk status listener so it does
+        // get removed before its re-rendered.
+        suppressedListener = listener;
+        listener = null;
+
         FakeChunkStorage storage = bobbyChunkManager.getStorage();
         CompoundTag tag = storage.serialize(chunk, getLightingProvider());
         storage.save(chunk.getPos(), tag);
@@ -62,10 +96,15 @@ public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
     private void bobbyReplaceChunk(int chunkX, int chunkZ, CallbackInfo ci) {
         CompoundTag tag = bobbyChunkReplacement;
         bobbyChunkReplacement = null;
-        if (tag == null || bobbyChunkManager.getChunk(chunkX, chunkZ) != null) {
+        if (tag == null) {
             return;
         }
         bobbyChunkManager.load(chunkX, chunkZ, tag, bobbyChunkManager.getStorage());
+
+        if (suppressedListener != null) {
+            listener = suppressedListener;
+            suppressedListener = null;
+        }
     }
 
     @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)
