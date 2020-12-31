@@ -88,4 +88,9 @@ public abstract class ClientChunkManagerMixin {
 		bobbyChunkManager.update(shouldKeepTicking);
 		profiler.pop();
 	}
+
+	@Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)
+	private void bobbyDebugString(CallbackInfoReturnable<String> cir) {
+	    cir.setReturnValue(cir.getReturnValue() + " " + bobbyChunkManager.getDebugString());
+	}
 }

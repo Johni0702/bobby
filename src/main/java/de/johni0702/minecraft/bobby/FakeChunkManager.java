@@ -1,6 +1,7 @@
 package de.johni0702.minecraft.bobby;
 
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -23,6 +24,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.util.Identifier;
+import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
 import net.minecraft.util.WorldSavePath;
 import net.minecraft.util.math.ChunkPos;
@@ -43,8 +45,11 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
 
 public class FakeChunkManager {
@@ -58,6 +63,13 @@ public class FakeChunkManager {
 
     private final Long2ObjectMap<WorldChunk> fakeChunks = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
     private LongSet knownMissing = new LongOpenHashSet();
+
+    // There unfortunately is only a synchronous api for loading chunks (even though that one just waits on a
+    // CompletableFuture, annoying but oh well), so we call that blocking api from a separate thread pool.
+    // The size of the pool must be sufficiently large such that there is always at least one query operation
+    // running, as otherwise the storage io worker will start writing chunks which slows everything down to a crawl.
+    private static final ExecutorService loadExecutor = Executors.newFixedThreadPool(8, new DefaultThreadFactory("bobby-loading", true));
+    private final Long2ObjectMap<LoadingJob> loadingJobs = new Long2ObjectOpenHashMap<>();
 
     public FakeChunkManager(ClientWorld world, ClientChunkManager clientChunkManager) {
         this.world = world;
@@ -109,6 +121,7 @@ public class FakeChunkManager {
         int viewDistance = client.options.viewDistance;
         LongSet missing = new LongOpenHashSet(knownMissing.size());
         LongSet toBeUnloaded = new LongOpenHashSet(fakeChunks.keySet());
+        LongSet toBeCancelled = new LongOpenHashSet(loadingJobs.keySet());
         for (int x = centerX - viewDistance; x <= centerX + viewDistance; x++) {
             for (int z = centerZ - viewDistance; z <= centerZ + viewDistance; z++) {
                 long chunkPos = ChunkPos.toLong(x, z);
@@ -135,13 +148,32 @@ public class FakeChunkManager {
                     return;
                 }
 
+                // We want this chunk to be loaded
+                toBeCancelled.remove(chunkPos);
+
+                LoadingJob loadingJob = loadingJobs.get(chunkPos);
+
+                // If we have not yet scheduled the chunk for loading, do so now.
+                if (loadingJob == null) {
+                    loadingJobs.put(chunkPos, loadingJob = new LoadingJob(x, z));
+                    loadExecutor.execute(loadingJob);
+                }
+
+                //noinspection OptionalAssignedToNull
+                if (loadingJob.result == null) {
+                    continue; // still loading
+                }
+
+                // Done loading
+                loadingJobs.remove(chunkPos);
+
                 client.getProfiler().push("loadFakeChunk");
-                WorldChunk chunk = load(x, z);
-                client.getProfiler().pop();
-                if (chunk == null) {
+                Optional<WorldChunk> chunk = loadingJob.complete();
+                if (!chunk.isPresent()) {
                     missing.add(chunkPos);
                     knownMissing.add(chunkPos); // add it to this set as well in case we run out of time
                 }
+                client.getProfiler().pop();
             }
         }
         this.knownMissing = missing;
@@ -150,20 +182,27 @@ public class FakeChunkManager {
         for (long chunkPos : toBeUnloaded) {
             unload(ChunkPos.getPackedX(chunkPos), ChunkPos.getPackedZ(chunkPos));
         }
+        // Any jobs remaining in this set are no longer needed and can now be cancelled
+        for (long chunkPos : toBeCancelled){
+            LoadingJob loadingJob = loadingJobs.remove(chunkPos);
+            if (loadingJob != null) {
+                loadingJob.cancelled = true;
+            }
+        }
     }
 
-    public  @Nullable WorldChunk load(int x, int z) {
+    private @Nullable Pair<CompoundTag, FakeChunkStorage> loadTag(int x, int z) {
         ChunkPos chunkPos = new ChunkPos(x, z);
         CompoundTag tag;
         try {
             tag = storage.loadTag(chunkPos);
             if (tag != null) {
-                return load(x, z, tag, storage);
+                return new Pair<>(tag, storage);
             }
             if (fallbackStorage != null) {
                 tag = fallbackStorage.loadTag(chunkPos);
                 if (tag != null) {
-                    return load(x, z, tag, fallbackStorage);
+                    return new Pair<>(tag, fallbackStorage);
                 }
             }
         } catch (IOException e) {
@@ -272,6 +311,35 @@ public class FakeChunkManager {
             DynamicRegistryManager.Impl registryTracker = DynamicRegistryManager.create();
             SaveProperties saveProperties = MinecraftClient.createSaveProperties(session, registryTracker, resourceManager, dataPackSettings);
             return saveProperties.getGeneratorOptions().getChunkGenerator().getBiomeSource();
+        }
+    }
+
+    public String getDebugString() {
+        return "F: " + fakeChunks.size() + " M: " + knownMissing.size() + " L: " + loadingJobs.size();
+    }
+
+    private class LoadingJob implements Runnable {
+        private final int x;
+        private final int z;
+        private volatile boolean cancelled;
+        @SuppressWarnings("OptionalUsedAsFieldOrParameterType") // null while loading, empty() if no chunk was found
+        private volatile Optional<Pair<CompoundTag, FakeChunkStorage>> result;
+
+        public LoadingJob(int x, int z) {
+            this.x = x;
+            this.z = z;
+        }
+
+        @Override
+        public void run() {
+            if (cancelled) {
+                return;
+            }
+            result = Optional.ofNullable(loadTag(x, z));
+        }
+
+        public Optional<WorldChunk> complete() {
+            return result.map(it -> load(x, z, it.getLeft(), it.getRight()));
         }
     }
 }

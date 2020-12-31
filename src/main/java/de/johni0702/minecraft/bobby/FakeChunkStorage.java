@@ -48,14 +48,6 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         setTagAt(pos, tag);
     }
 
-    public @Nullable WorldChunk load(ChunkPos pos, World world) throws IOException {
-        CompoundTag level = loadTag(pos);
-        if (level == null) {
-            return null;
-        }
-        return deserialize(pos, level, world);
-    }
-
     public @Nullable CompoundTag loadTag(ChunkPos pos) throws IOException {
         CompoundTag tag = getNbt(pos);
         if (tag == null) {
