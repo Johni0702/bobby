@@ -3,11 +3,14 @@
   "minVersion": "0.8",
   "package": "de.johni0702.minecraft.bobby.mixin",
   "compatibilityLevel": "JAVA_8",
+  "plugin": "de.johni0702.minecraft.bobby.MixinConfigPlugin",
   "mixins": [
     "BiomeAccessAccessor"
   ],
   "client": [
-    "ClientChunkManagerMixin"
+    "ClientChunkManagerMixin",
+    "sodium.SodiumChunkManagerAccessor",
+    "sodium.SodiumChunkManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

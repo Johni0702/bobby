@@ -30,14 +30,18 @@ public abstract class ClientChunkManagerMixin {
 	@Shadow @Nullable public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
 	@Shadow public abstract LightingProvider getLightingProvider();
 
-	private FakeChunkManager bobbyChunkManager;
+	protected FakeChunkManager bobbyChunkManager;
 	// Cache of chunk which was just unloaded so we can immediately
 	// load it again without having to wait for the storage io worker.
-	private @Nullable CompoundTag bobbyChunkReplacement;
+	protected  @Nullable CompoundTag bobbyChunkReplacement;
 
 	@Inject(method = "<init>", at = @At("RETURN"))
 	private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
-		bobbyChunkManager = new FakeChunkManager(world, (ClientChunkManager) (Object) this);
+		bobbyChunkManager = createBobbyChunkManager(world);
+	}
+
+	protected FakeChunkManager createBobbyChunkManager(ClientWorld world) {
+		return new FakeChunkManager(world, (ClientChunkManager) (Object) this);
 	}
 
 	@Inject(method = "getChunk", at = @At("RETURN"), cancellable = true)

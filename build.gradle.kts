@@ -15,6 +15,7 @@ dependencies {
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings("net.fabricmc:yarn:${yarnMappings}:v2")
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
+	modImplementation("com.github.jellysquid3:sodium-fabric:mc1.16.3-0.1.0")
 }
 
 tasks.processResources {
@@ -46,6 +47,14 @@ publishing {
 			artifact(tasks.remapJar) {
 				builtBy(tasks.remapJar)
 			}
+		}
+	}
+}
+
+repositories {
+	maven("https://jitpack.io") {
+		content {
+			includeGroup("com.github.jellysquid3")
 		}
 	}
 }

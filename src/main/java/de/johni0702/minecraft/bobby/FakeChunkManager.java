@@ -1,12 +1,15 @@
 package de.johni0702.minecraft.bobby;
 
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
+import de.johni0702.minecraft.bobby.mixin.sodium.SodiumChunkManagerAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
+import me.jellysquid.mods.sodium.client.world.SodiumChunkManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ServerInfo;
@@ -340,6 +343,40 @@ public class FakeChunkManager {
 
         public Optional<WorldChunk> complete() {
             return result.map(it -> load(x, z, it.getLeft(), it.getRight()));
+        }
+    }
+
+    public static class Sodium extends FakeChunkManager {
+
+        private final SodiumChunkManagerAccessor sodiumChunkManager;
+
+        public Sodium(ClientWorld world, SodiumChunkManager sodiumChunkManager) {
+            super(world, sodiumChunkManager);
+            this.sodiumChunkManager = (SodiumChunkManagerAccessor) sodiumChunkManager;
+        }
+
+        @Override
+        public @Nullable WorldChunk load(int x, int z, CompoundTag tag, FakeChunkStorage storage) {
+            WorldChunk chunk = super.load(x, z, tag, storage);
+
+            if (chunk != null) {
+                ChunkStatusListener listener = sodiumChunkManager.getListener();
+                if (listener != null) {
+                    listener.onChunkAdded(x, z);
+                }
+            }
+
+            return chunk;
+        }
+
+        @Override
+        public void unload(int x, int z) {
+            super.unload(x, z);
+
+            ChunkStatusListener listener = sodiumChunkManager.getListener();
+            if (listener != null) {
+                listener.onChunkRemoved(x, z);
+            }
         }
     }
 }
