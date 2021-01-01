@@ -12,7 +12,8 @@
     "ClientPlayNetworkHandlerMixin",
     "MinecraftClientMixin",
     "sodium.SodiumChunkManagerAccessor",
-    "sodium.SodiumChunkManagerMixin"
+    "sodium.SodiumChunkManagerMixin",
+    "sodium.SodiumGameOptionPagesMixin"
   ],
   "injectors": {
     "defaultRequire": 1
