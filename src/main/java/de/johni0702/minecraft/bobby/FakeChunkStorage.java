@@ -1,6 +1,7 @@
 package de.johni0702.minecraft.bobby;
 
 import net.minecraft.SharedConstants;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.DummyClientTickScheduler;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -29,14 +30,35 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
 public class FakeChunkStorage extends VersionedChunkStorage {
     private static final Logger LOGGER = LogManager.getLogger();
+    private static final Map<File, FakeChunkStorage> active = new HashMap<>();
+
+    public static FakeChunkStorage getFor(File file, BiomeSource biomeSource) {
+        if (!MinecraftClient.getInstance().isOnThread()) {
+            throw new IllegalStateException("Must be called from main thread.");
+        }
+        return active.computeIfAbsent(file, f -> new FakeChunkStorage(file, biomeSource));
+    }
+
+    public static void closeAll() {
+        for (FakeChunkStorage storage : active.values()) {
+            try {
+                storage.close();
+            } catch (IOException e) {
+                LOGGER.error("Failed to close storage", e);
+            }
+        }
+        active.clear();
+    }
+
     private final BiomeSource biomeSource;
 
-    public FakeChunkStorage(File file, BiomeSource biomeSource) {
+    private FakeChunkStorage(File file, BiomeSource biomeSource) {
         super(file, null, false);
         this.biomeSource = biomeSource;
     }

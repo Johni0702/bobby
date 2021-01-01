@@ -90,7 +90,7 @@ public class FakeChunkManager {
                 .resolve(worldId.getNamespace())
                 .resolve(worldId.getPath());
 
-        storage = new FakeChunkStorage(storagePath.toFile(), null);
+        storage = FakeChunkStorage.getFor(storagePath.toFile(), null);
 
         FakeChunkStorage fallbackStorage = null;
         LevelStorage levelStorage = client.getLevelStorage();
@@ -98,7 +98,7 @@ public class FakeChunkManager {
             try (LevelStorage.Session session = levelStorage.createSession(FALLBACK_LEVEL_NAME)) {
                 File worldDirectory = session.getWorldDirectory(worldKey);
                 File regionDirectory = new File(worldDirectory, "region");
-                fallbackStorage = new FakeChunkStorage(regionDirectory, getBiomeSource(session));
+                fallbackStorage = FakeChunkStorage.getFor(regionDirectory, getBiomeSource(session));
             } catch (Exception e) {
                 e.printStackTrace();
             }
