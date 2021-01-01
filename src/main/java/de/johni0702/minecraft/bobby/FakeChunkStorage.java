@@ -37,7 +37,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     private final BiomeSource biomeSource;
 
     public FakeChunkStorage(File file, BiomeSource biomeSource) {
-        super(file, null, true);
+        super(file, null, false);
         this.biomeSource = biomeSource;
     }
 

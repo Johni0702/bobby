@@ -63,6 +63,7 @@ public class FakeChunkManager {
     private final ClientChunkManager clientChunkManager;
     private final FakeChunkStorage storage;
     private final @Nullable FakeChunkStorage fallbackStorage;
+    private int ticksSinceLastSave;
 
     private final Long2ObjectMap<WorldChunk> fakeChunks = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
     private LongSet knownMissing = new LongOpenHashSet();
@@ -114,6 +115,14 @@ public class FakeChunkManager {
     }
 
     public void update(BooleanSupplier shouldKeepTicking) {
+        // Once a minute, force chunks to disk
+        if (++ticksSinceLastSave > 20 * 60) {
+            // completeAll is blocking, so we run it on the io pool
+            Util.getIoWorkerExecutor().execute(storage::completeAll);
+
+            ticksSinceLastSave = 0;
+        }
+
         ClientPlayerEntity player = client.player;
         if (player == null) {
             return;
