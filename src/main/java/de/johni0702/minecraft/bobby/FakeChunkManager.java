@@ -192,7 +192,11 @@ public class FakeChunkManager {
         // Anything remaining in the set is no longer needed and can now be unloaded
         for (long chunkPos : toBeUnloaded) {
             unload(ChunkPos.getPackedX(chunkPos), ChunkPos.getPackedZ(chunkPos), false);
+            if (!shouldKeepTicking.getAsBoolean()) {
+                break;
+            }
         }
+
         // Any jobs remaining in this set are no longer needed and can now be cancelled
         for (long chunkPos : toBeCancelled){
             LoadingJob loadingJob = loadingJobs.remove(chunkPos);
