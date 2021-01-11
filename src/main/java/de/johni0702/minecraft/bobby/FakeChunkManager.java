@@ -6,6 +6,7 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
@@ -68,7 +69,8 @@ public class FakeChunkManager {
     private int ticksSinceLastSave;
 
     private final Long2ObjectMap<WorldChunk> fakeChunks = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
-    private LongSet knownMissing = new LongOpenHashSet();
+    private int centerX, centerZ, viewDistance;
+    private final LongSet toBeUnloaded = new LongOpenHashSet();
 
     // There unfortunately is only a synchronous api for loading chunks (even though that one just waits on a
     // CompletableFuture, annoying but oh well), so we call that blocking api from a separate thread pool.
@@ -129,58 +131,63 @@ public class FakeChunkManager {
         if (player == null) {
             return;
         }
-        // Iterate through all chunks in view distance, try to load all we can and figure out which one can be unloaded.
-        int centerX = player.chunkX;
-        int centerZ = player.chunkZ;
-        int viewDistance = client.options.viewDistance;
-        LongSet missing = new LongOpenHashSet(knownMissing.size());
-        LongSet toBeUnloaded = new LongOpenHashSet(fakeChunks.keySet());
-        LongSet toBeCancelled = new LongOpenHashSet(loadingJobs.keySet());
-        for (int x = centerX - viewDistance; x <= centerX + viewDistance; x++) {
-            for (int z = centerZ - viewDistance; z <= centerZ + viewDistance; z++) {
-                long chunkPos = ChunkPos.toLong(x, z);
 
-                // We want this chunk, so don't unload it
-                toBeUnloaded.remove(chunkPos);
-
-                // If there already is a chunk loaded, there's nothing to do
-                if (clientChunkManager.getChunk(x, z, ChunkStatus.FULL, false) != null) {
-                    continue;
-                }
-
-                // If we already know that we don't have the given chunk, there's nothing we can do
-                if (knownMissing.contains(chunkPos)) {
-                    missing.add(chunkPos);
-                    continue;
-                }
-
-                // We want this chunk to be loaded
-                toBeCancelled.remove(chunkPos);
-
-                LoadingJob loadingJob = loadingJobs.get(chunkPos);
-
-                // If we have not yet scheduled the chunk for loading, do so now.
-                if (loadingJob == null) {
-                    loadingJobs.put(chunkPos, loadingJob = new LoadingJob(x, z));
-                    loadExecutor.execute(loadingJob);
+        int oldCenterX = this.centerX;
+        int oldCenterZ = this.centerZ;
+        int oldViewDistance = this.viewDistance;
+        int newCenterX = player.chunkX;
+        int newCenterZ = player.chunkZ;
+        int newViewDistance = client.options.viewDistance;
+        if (oldCenterX != newCenterX || oldCenterZ != newCenterZ || oldViewDistance != newViewDistance) {
+            // Firstly check which chunks can be unloaded / cancelled
+            for (int x = oldCenterX - oldViewDistance; x <= oldCenterX + oldViewDistance; x++) {
+                boolean xOutsideNew = x < newCenterX - newViewDistance || x > newCenterX + newViewDistance;
+                for (int z = oldCenterZ - oldViewDistance; z <= oldCenterZ + oldViewDistance; z++) {
+                    boolean zOutsideNew = z < newCenterZ - newViewDistance || z > newCenterZ + newViewDistance;
+                    if (xOutsideNew || zOutsideNew) {
+                        cancelLoad(x, z);
+                        toBeUnloaded.add(ChunkPos.toLong(x, z));
+                    }
                 }
             }
+
+            // Then check which one we need to load
+            for (int x = newCenterX - newViewDistance; x <= newCenterX + newViewDistance; x++) {
+                boolean xOutsideOld = x < oldCenterX - oldViewDistance || x > oldCenterX + oldViewDistance;
+                for (int z = newCenterZ - newViewDistance; z <= newCenterZ + newViewDistance; z++) {
+                    boolean zOutsideOld = z < oldCenterZ - oldViewDistance || z > oldCenterZ + oldViewDistance;
+                    if (xOutsideOld || zOutsideOld) {
+                        long chunkPos = ChunkPos.toLong(x, z);
+
+                        // We want this chunk, so don't unload it if it's still here
+                        toBeUnloaded.remove(chunkPos);
+
+                        // If there already is a chunk loaded, there's nothing to do
+                        if (clientChunkManager.getChunk(x, z, ChunkStatus.FULL, false) != null) {
+                            continue;
+                        }
+
+                        // All good, load it
+                        LoadingJob loadingJob = new LoadingJob(x, z);
+                        loadingJobs.put(chunkPos, loadingJob);
+                        loadExecutor.execute(loadingJob);
+                    }
+                }
+            }
+
+            this.centerX = newCenterX;
+            this.centerZ = newCenterZ;
+            this.viewDistance = newViewDistance;
         }
-        this.knownMissing = missing;
 
         // Anything remaining in the set is no longer needed and can now be unloaded
-        for (long chunkPos : toBeUnloaded) {
+        LongIterator unloadingIter = toBeUnloaded.iterator();
+        while (unloadingIter.hasNext()) {
+            long chunkPos = unloadingIter.nextLong();
+            unloadingIter.remove();
             unload(ChunkPos.getPackedX(chunkPos), ChunkPos.getPackedZ(chunkPos), false);
             if (!shouldKeepTicking.getAsBoolean()) {
                 break;
-            }
-        }
-
-        // Any jobs remaining in this set are no longer needed and can now be cancelled
-        for (long chunkPos : toBeCancelled){
-            LoadingJob loadingJob = loadingJobs.remove(chunkPos);
-            if (loadingJob != null) {
-                loadingJob.cancelled = true;
             }
         }
 
@@ -197,10 +204,7 @@ public class FakeChunkManager {
             loadingJobsIter.remove();
 
             client.getProfiler().push("loadFakeChunk");
-            Optional<WorldChunk> chunk = loadingJob.complete();
-            if (!chunk.isPresent()) {
-                knownMissing.add(ChunkPos.toLong(loadingJob.x, loadingJob.z));
-            }
+            loadingJob.complete();
             client.getProfiler().pop();
 
             if (!shouldKeepTicking.getAsBoolean()) {
@@ -260,6 +264,7 @@ public class FakeChunkManager {
     }
 
     public void unload(int x, int z, boolean willBeReplaced) {
+        cancelLoad(x, z);
         WorldChunk chunk = fakeChunks.remove(ChunkPos.toLong(x, z));
         if (chunk != null && !willBeReplaced) {
             LightingProvider lightingProvider = clientChunkManager.getLightingProvider();
@@ -273,6 +278,13 @@ public class FakeChunkManager {
         }
         if (chunk != null) {
             world.unloadBlockEntities(chunk);
+        }
+    }
+
+    private void cancelLoad(int x, int z) {
+        LoadingJob loadingJob = loadingJobs.remove(ChunkPos.toLong(x, z));
+        if (loadingJob != null) {
+            loadingJob.cancelled = true;
         }
     }
 
@@ -337,7 +349,7 @@ public class FakeChunkManager {
     }
 
     public String getDebugString() {
-        return "F: " + fakeChunks.size() + " M: " + knownMissing.size() + " L: " + loadingJobs.size();
+        return "F: " + fakeChunks.size() + " L: " + loadingJobs.size() + " U: " + toBeUnloaded.size();
     }
 
     private class LoadingJob implements Runnable {
@@ -361,12 +373,8 @@ public class FakeChunkManager {
                     .map(it -> it.getRight().deserialize(new ChunkPos(x, z), it.getLeft(), world));
         }
 
-        public Optional<WorldChunk> complete() {
-            return result.map(it -> {
-                WorldChunk chunk = it.get();
-                load(x, z, chunk);
-                return chunk;
-            });
+        public void complete() {
+            result.ifPresent(it -> load(x, z, it.get()));
         }
     }
 
