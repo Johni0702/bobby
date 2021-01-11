@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import me.jellysquid.mods.sodium.client.world.SodiumChunkManager;
 import net.minecraft.client.MinecraftClient;
@@ -153,13 +154,6 @@ public class FakeChunkManager {
                     continue;
                 }
 
-                // Otherwise we'll try loading it, but only if we've still got time to do so
-                if (!shouldKeepTicking.getAsBoolean()) {
-                    // if there's no more time, then just return immediately.
-                    // Do not pass go. Do not store the partial missing set. Do not unload chunks based on partial data.
-                    return;
-                }
-
                 // We want this chunk to be loaded
                 toBeCancelled.remove(chunkPos);
 
@@ -170,22 +164,6 @@ public class FakeChunkManager {
                     loadingJobs.put(chunkPos, loadingJob = new LoadingJob(x, z));
                     loadExecutor.execute(loadingJob);
                 }
-
-                //noinspection OptionalAssignedToNull
-                if (loadingJob.result == null) {
-                    continue; // still loading
-                }
-
-                // Done loading
-                loadingJobs.remove(chunkPos);
-
-                client.getProfiler().push("loadFakeChunk");
-                Optional<WorldChunk> chunk = loadingJob.complete();
-                if (!chunk.isPresent()) {
-                    missing.add(chunkPos);
-                    knownMissing.add(chunkPos); // add it to this set as well in case we run out of time
-                }
-                client.getProfiler().pop();
             }
         }
         this.knownMissing = missing;
@@ -203,6 +181,30 @@ public class FakeChunkManager {
             LoadingJob loadingJob = loadingJobs.remove(chunkPos);
             if (loadingJob != null) {
                 loadingJob.cancelled = true;
+            }
+        }
+
+        ObjectIterator<LoadingJob> loadingJobsIter = this.loadingJobs.values().iterator();
+        while (loadingJobsIter.hasNext()) {
+            LoadingJob loadingJob = loadingJobsIter.next();
+
+            //noinspection OptionalAssignedToNull
+            if (loadingJob.result == null) {
+                continue; // still loading
+            }
+
+            // Done loading
+            loadingJobsIter.remove();
+
+            client.getProfiler().push("loadFakeChunk");
+            Optional<WorldChunk> chunk = loadingJob.complete();
+            if (!chunk.isPresent()) {
+                knownMissing.add(ChunkPos.toLong(loadingJob.x, loadingJob.z));
+            }
+            client.getProfiler().pop();
+
+            if (!shouldKeepTicking.getAsBoolean()) {
+                break;
             }
         }
     }
