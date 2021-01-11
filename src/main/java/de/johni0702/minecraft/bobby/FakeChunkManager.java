@@ -54,6 +54,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 public class FakeChunkManager {
     private static final String FALLBACK_LEVEL_NAME = "bobby-fallback";
@@ -226,12 +227,16 @@ public class FakeChunkManager {
         return null;
     }
 
-    public @Nullable WorldChunk load(int x, int z, CompoundTag tag, FakeChunkStorage storage) {
-        ChunkPos chunkPos = new ChunkPos(x, z);
-        WorldChunk chunk = storage.deserialize(chunkPos, tag, world);
-        if (chunk == null) {
-            return null;
+    public void load(int x, int z, CompoundTag tag, FakeChunkStorage storage) {
+        Supplier<WorldChunk> chunkSupplier = storage.deserialize(new ChunkPos(x, z), tag, world);
+        if (chunkSupplier == null) {
+            return;
         }
+        load(x, z, chunkSupplier.get());
+    }
+
+    protected void load(int x, int z, WorldChunk chunk) {
+        ChunkPos chunkPos = new ChunkPos(x, z);
 
         fakeChunks.put(ChunkPos.toLong(x, z), chunk);
 
@@ -250,8 +255,6 @@ public class FakeChunkManager {
         for (int i = 0; i < 16; i++) {
             world.scheduleBlockRenders(x, i, z);
         }
-
-        return chunk;
     }
 
     public void unload(int x, int z, boolean willBeReplaced) {
@@ -340,7 +343,7 @@ public class FakeChunkManager {
         private final int z;
         private volatile boolean cancelled;
         @SuppressWarnings("OptionalUsedAsFieldOrParameterType") // null while loading, empty() if no chunk was found
-        private volatile Optional<Pair<CompoundTag, FakeChunkStorage>> result;
+        private volatile Optional<Supplier<WorldChunk>> result;
 
         public LoadingJob(int x, int z) {
             this.x = x;
@@ -352,11 +355,16 @@ public class FakeChunkManager {
             if (cancelled) {
                 return;
             }
-            result = Optional.ofNullable(loadTag(x, z));
+            result = Optional.ofNullable(loadTag(x, z))
+                    .map(it -> it.getRight().deserialize(new ChunkPos(x, z), it.getLeft(), world));
         }
 
         public Optional<WorldChunk> complete() {
-            return result.map(it -> load(x, z, it.getLeft(), it.getRight()));
+            return result.map(it -> {
+                WorldChunk chunk = it.get();
+                load(x, z, chunk);
+                return chunk;
+            });
         }
     }
 
@@ -370,17 +378,13 @@ public class FakeChunkManager {
         }
 
         @Override
-        public @Nullable WorldChunk load(int x, int z, CompoundTag tag, FakeChunkStorage storage) {
-            WorldChunk chunk = super.load(x, z, tag, storage);
+        protected void load(int x, int z, WorldChunk chunk) {
+            super.load(x, z, chunk);
 
-            if (chunk != null) {
-                ChunkStatusListener listener = sodiumChunkManager.getListener();
-                if (listener != null) {
-                    listener.onChunkAdded(x, z);
-                }
+            ChunkStatusListener listener = sodiumChunkManager.getListener();
+            if (listener != null) {
+                listener.onChunkAdded(x, z);
             }
-
-            return chunk;
         }
 
         @Override

@@ -33,6 +33,7 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class FakeChunkStorage extends VersionedChunkStorage {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -146,7 +147,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         return level;
     }
 
-    public @Nullable WorldChunk deserialize(ChunkPos pos, CompoundTag level, World world) {
+    // Note: This method is called asynchronously, so any methods called must either be verified to be thread safe (and
+    //       must be unlikely to loose that thread safety in the presence of third party mods) or must be delayed
+    //       by moving them into the returned supplier which is executed on the main thread.
+    //       For performance reasons though: The more stuff we can do async, the better.
+    public @Nullable Supplier<WorldChunk> deserialize(ChunkPos pos, CompoundTag level, World world) {
         ChunkPos chunkPos = new ChunkPos(level.getInt("xPos"), level.getInt("zPos"));
         if (!Objects.equals(pos, chunkPos)) {
             LOGGER.error("Chunk file at {} is in the wrong location; relocating. (Expected {}, got {})", pos, pos, chunkPos);
@@ -163,10 +168,6 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         }
         ListTag sectionsTag = level.getList("Sections", 10);
         ChunkSection[] chunkSections = new ChunkSection[16];
-        boolean hasSkyLight = world.getDimension().hasSkyLight();
-        ChunkManager chunkManager = world.getChunkManager();
-        LightingProvider lightingProvider = chunkManager.getLightingProvider();
-        lightingProvider.setRetainData(pos, true);
 
         for (int i = 0; i < sectionsTag.size(); i++) {
             CompoundTag sectionTag = sectionsTag.getCompound(i);
@@ -180,16 +181,6 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 if (!chunkSection.isEmpty()) {
                     chunkSections[y] = chunkSection;
                 }
-            }
-
-            if (sectionTag.contains("BlockLight", 7)) {
-                lightingProvider.enqueueSectionData(LightType.BLOCK, ChunkSectionPos.from(pos, y),
-                        new ChunkNibbleArray(sectionTag.getByteArray("BlockLight")), true);
-            }
-
-            if (hasSkyLight && sectionTag.contains("SkyLight", 7)) {
-                lightingProvider.enqueueSectionData(LightType.SKY, ChunkSectionPos.from(pos, y),
-                        new ChunkNibbleArray(sectionTag.getByteArray("SkyLight")), true);
             }
         }
 
@@ -224,6 +215,28 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             chunk.addPendingBlockEntityTag(blockEntitiesTag.getCompound(i));
         }
 
-        return chunk;
+        return () -> {
+            boolean hasSkyLight = world.getDimension().hasSkyLight();
+            ChunkManager chunkManager = world.getChunkManager();
+            LightingProvider lightingProvider = chunkManager.getLightingProvider();
+            lightingProvider.setRetainData(pos, true);
+
+            for (int i = 0; i < sectionsTag.size(); i++) {
+                CompoundTag sectionTag = sectionsTag.getCompound(i);
+                int y = sectionTag.getByte("Y");
+
+                if (sectionTag.contains("BlockLight", 7)) {
+                    lightingProvider.enqueueSectionData(LightType.BLOCK, ChunkSectionPos.from(pos, y),
+                            new ChunkNibbleArray(sectionTag.getByteArray("BlockLight")), true);
+                }
+
+                if (hasSkyLight && sectionTag.contains("SkyLight", 7)) {
+                    lightingProvider.enqueueSectionData(LightType.SKY, ChunkSectionPos.from(pos, y),
+                            new ChunkNibbleArray(sectionTag.getByteArray("SkyLight")), true);
+                }
+            }
+
+            return chunk;
+        };
     }
 }
