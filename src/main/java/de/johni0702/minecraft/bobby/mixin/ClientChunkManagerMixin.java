@@ -2,12 +2,11 @@ package de.johni0702.minecraft.bobby.mixin;
 
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
-import net.minecraft.client.MinecraftClient;
+import de.johni0702.minecraft.bobby.IClientChunkManager;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.PacketByteBuf;
-import net.minecraft.util.profiler.Profiler;
 import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
@@ -21,10 +20,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.function.BooleanSupplier;
-
 @Mixin(ClientChunkManager.class)
-public abstract class ClientChunkManagerMixin {
+public abstract class ClientChunkManagerMixin implements IClientChunkManager {
 	@Shadow @Final private WorldChunk emptyChunk;
 
 	@Shadow @Nullable public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
@@ -42,6 +39,11 @@ public abstract class ClientChunkManagerMixin {
 
 	protected FakeChunkManager createBobbyChunkManager(ClientWorld world) {
 		return new FakeChunkManager(world, (ClientChunkManager) (Object) this);
+	}
+
+	@Override
+	public FakeChunkManager getBobbyChunkManager() {
+		return bobbyChunkManager;
 	}
 
 	@Inject(method = "getChunk", at = @At("RETURN"), cancellable = true)
@@ -83,14 +85,6 @@ public abstract class ClientChunkManagerMixin {
 			return;
 		}
 		bobbyChunkManager.load(chunkX, chunkZ, tag, bobbyChunkManager.getStorage());
-	}
-
-	@Inject(method = "tick", at = @At("HEAD"))
-	private void bobbyTick(BooleanSupplier shouldKeepTicking, CallbackInfo ci) {
-		Profiler profiler = MinecraftClient.getInstance().getProfiler();
-		profiler.push("checkFakeChunks");
-		bobbyChunkManager.update(shouldKeepTicking);
-		profiler.pop();
 	}
 
 	@Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)
