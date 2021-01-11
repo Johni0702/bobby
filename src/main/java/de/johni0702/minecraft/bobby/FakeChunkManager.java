@@ -156,7 +156,6 @@ public class FakeChunkManager {
                 if (!shouldKeepTicking.getAsBoolean()) {
                     // if there's no more time, then just return immediately.
                     // Do not pass go. Do not store the partial missing set. Do not unload chunks based on partial data.
-                    client.getProfiler().pop();
                     return;
                 }
 
