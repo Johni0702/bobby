@@ -22,73 +22,73 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ClientChunkManager.class)
 public abstract class ClientChunkManagerMixin implements IClientChunkManager {
-	@Shadow @Final private WorldChunk emptyChunk;
+    @Shadow @Final private WorldChunk emptyChunk;
 
-	@Shadow @Nullable public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
-	@Shadow public abstract LightingProvider getLightingProvider();
+    @Shadow @Nullable public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
+    @Shadow public abstract LightingProvider getLightingProvider();
 
-	protected FakeChunkManager bobbyChunkManager;
-	// Cache of chunk which was just unloaded so we can immediately
-	// load it again without having to wait for the storage io worker.
-	protected  @Nullable CompoundTag bobbyChunkReplacement;
+    protected FakeChunkManager bobbyChunkManager;
+    // Cache of chunk which was just unloaded so we can immediately
+    // load it again without having to wait for the storage io worker.
+    protected  @Nullable CompoundTag bobbyChunkReplacement;
 
-	@Inject(method = "<init>", at = @At("RETURN"))
-	private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
-		bobbyChunkManager = createBobbyChunkManager(world);
-	}
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
+        bobbyChunkManager = createBobbyChunkManager(world);
+    }
 
-	protected FakeChunkManager createBobbyChunkManager(ClientWorld world) {
-		return new FakeChunkManager(world, (ClientChunkManager) (Object) this);
-	}
+    protected FakeChunkManager createBobbyChunkManager(ClientWorld world) {
+        return new FakeChunkManager(world, (ClientChunkManager) (Object) this);
+    }
 
-	@Override
-	public FakeChunkManager getBobbyChunkManager() {
-		return bobbyChunkManager;
-	}
+    @Override
+    public FakeChunkManager getBobbyChunkManager() {
+        return bobbyChunkManager;
+    }
 
-	@Inject(method = "getChunk", at = @At("RETURN"), cancellable = true)
-	private void bobbyGetChunk(int x, int z, ChunkStatus chunkStatus, boolean orEmpty, CallbackInfoReturnable<WorldChunk> ci) {
-	    // Did we find a live chunk?
-		if (ci.getReturnValue() != (orEmpty ? emptyChunk : null)) {
-			return;
-		}
+    @Inject(method = "getChunk", at = @At("RETURN"), cancellable = true)
+    private void bobbyGetChunk(int x, int z, ChunkStatus chunkStatus, boolean orEmpty, CallbackInfoReturnable<WorldChunk> ci) {
+        // Did we find a live chunk?
+        if (ci.getReturnValue() != (orEmpty ? emptyChunk : null)) {
+            return;
+        }
 
-		// Otherwise, see if we've got one
-		WorldChunk chunk = bobbyChunkManager.getChunk(x, z);
-		if (chunk != null) {
-			ci.setReturnValue(chunk);
-		}
-	}
+        // Otherwise, see if we've got one
+        WorldChunk chunk = bobbyChunkManager.getChunk(x, z);
+        if (chunk != null) {
+            ci.setReturnValue(chunk);
+        }
+    }
 
-	@Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
-	private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
-	    bobbyChunkManager.unload(x, z, true);
-	}
+    @Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
+    private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+        bobbyChunkManager.unload(x, z, true);
+    }
 
-	@Inject(method = "unload", at = @At("HEAD"))
-	private void bobbySaveChunk(int chunkX, int chunkZ, CallbackInfo ci) {
-		WorldChunk chunk = getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
-		if (chunk == null) {
-			return;
-		}
-		FakeChunkStorage storage = bobbyChunkManager.getStorage();
-		CompoundTag tag = storage.serialize(chunk, getLightingProvider());
-		storage.save(chunk.getPos(), tag);
-		bobbyChunkReplacement = tag;
-	}
+    @Inject(method = "unload", at = @At("HEAD"))
+    private void bobbySaveChunk(int chunkX, int chunkZ, CallbackInfo ci) {
+        WorldChunk chunk = getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
+        if (chunk == null) {
+            return;
+        }
+        FakeChunkStorage storage = bobbyChunkManager.getStorage();
+        CompoundTag tag = storage.serialize(chunk, getLightingProvider());
+        storage.save(chunk.getPos(), tag);
+        bobbyChunkReplacement = tag;
+    }
 
-	@Inject(method = "unload", at = @At("RETURN"))
-	private void bobbyReplaceChunk(int chunkX, int chunkZ, CallbackInfo ci) {
-	    CompoundTag tag = bobbyChunkReplacement;
-	    bobbyChunkReplacement = null;
-		if (tag == null || bobbyChunkManager.getChunk(chunkX, chunkZ) != null) {
-			return;
-		}
-		bobbyChunkManager.load(chunkX, chunkZ, tag, bobbyChunkManager.getStorage());
-	}
+    @Inject(method = "unload", at = @At("RETURN"))
+    private void bobbyReplaceChunk(int chunkX, int chunkZ, CallbackInfo ci) {
+        CompoundTag tag = bobbyChunkReplacement;
+        bobbyChunkReplacement = null;
+        if (tag == null || bobbyChunkManager.getChunk(chunkX, chunkZ) != null) {
+            return;
+        }
+        bobbyChunkManager.load(chunkX, chunkZ, tag, bobbyChunkManager.getStorage());
+    }
 
-	@Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)
-	private void bobbyDebugString(CallbackInfoReturnable<String> cir) {
-	    cir.setReturnValue(cir.getReturnValue() + " " + bobbyChunkManager.getDebugString());
-	}
+    @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)
+    private void bobbyDebugString(CallbackInfoReturnable<String> cir) {
+        cir.setReturnValue(cir.getReturnValue() + " " + bobbyChunkManager.getDebugString());
+    }
 }
