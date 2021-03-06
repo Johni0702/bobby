@@ -5,6 +5,7 @@ import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
+import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
 import me.shedaniel.clothconfig2.gui.entries.IntegerSliderEntry;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
@@ -68,6 +69,12 @@ public class Bobby implements ClientModInitializer {
                 .setDefaultValue(defaultConfig.isEnabled())
                 .build();
 
+        IntegerListEntry maxRenderDistance = entryBuilder
+                .startIntField(new TranslatableText("option.bobby.max_render_distance"), config.getMaxRenderDistance())
+                .setTooltip(new TranslatableText("tooltip.option.bobby.max_render_distance"))
+                .setDefaultValue(defaultConfig.getMaxRenderDistance())
+                .build();
+
         IntegerSliderEntry viewDistanceOverwrite = entryBuilder
                 .startIntSlider(new TranslatableText("option.bobby.view_distance_overwrite"), config.getViewDistanceOverwrite(), 0, 16)
                 .setTooltip(new TranslatableText("tooltip.option.bobby.view_distance_overwrite"))
@@ -76,10 +83,12 @@ public class Bobby implements ClientModInitializer {
 
         ConfigCategory general = builder.getOrCreateCategory(new TranslatableText("category.bobby.general"));
         general.addEntry(enabled);
+        general.addEntry(maxRenderDistance);
         general.addEntry(viewDistanceOverwrite);
 
         builder.setSavingRunnable(() -> configReference.setAndSaveAsync(new BobbyConfig(
                 enabled.getValue(),
+                maxRenderDistance.getValue(),
                 viewDistanceOverwrite.getValue()
         )));
 
