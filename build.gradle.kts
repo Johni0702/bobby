@@ -8,6 +8,9 @@ val mavenGroup: String by project
 version = modVersion
 group = mavenGroup
 
+val clothConfigVersion: String by project
+val modMenuVersion: String by project
+
 dependencies {
 	val minecraftVersion: String by project
 	val yarnMappings: String by project
@@ -18,13 +21,21 @@ dependencies {
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
 	modImplementation("com.github.jellysquid3:sodium-fabric:mc1.16.3-0.1.0")
 	modImplementation(include("ca.stellardrift:confabricate:$confabricateVersion")!!)
+	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")
+	modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
 }
 
 tasks.processResources {
 	inputs.property("version", modVersion)
+	inputs.property("clothConfigVersion", clothConfigVersion)
+	inputs.property("modMenuVersion", modMenuVersion)
 
 	filesMatching("fabric.mod.json") {
-		expand(mutableMapOf("version" to modVersion))
+		expand(mutableMapOf(
+				"version" to modVersion,
+				"clothConfigVersion" to clothConfigVersion,
+				"modMenuVersion" to modMenuVersion
+		))
 	}
 }
 
@@ -57,6 +68,16 @@ repositories {
 	maven("https://jitpack.io") {
 		content {
 			includeGroup("com.github.jellysquid3")
+		}
+	}
+	maven("https://maven.shedaniel.me") {
+		content {
+			includeGroup("me.shedaniel.cloth")
+		}
+	}
+	maven("https://maven.terraformersmc.com/releases") {
+		content {
+			includeGroup("com.terraformersmc")
 		}
 	}
 }

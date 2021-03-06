@@ -16,10 +16,13 @@
   "license": "GPL-3.0-or-later",
   "icon": "assets/bobby/icon.png",
 
-  "environment": "*",
+  "environment": "client",
   "entrypoints": {
     "client": [
       "de.johni0702.minecraft.bobby.Bobby"
+    ],
+    "modmenu": [
+      "de.johni0702.minecraft.bobby.BobbyModMenuApiImpl"
     ]
   },
   "mixins": [
@@ -31,9 +34,10 @@
     "minecraft": "1.16.x"
   },
   "suggests": {
+    "cloth-config2": "^${clothConfigVersion}",
+    "modmenu": "^${modMenuVersion}"
   },
 
   "custom": {
-    "modmenu:clientsideOnly": true
   }
 }

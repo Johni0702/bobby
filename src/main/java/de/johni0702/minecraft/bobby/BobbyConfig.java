@@ -8,6 +8,12 @@ public class BobbyConfig {
 
     private boolean enabled = true;
 
+    public BobbyConfig() {}
+
+    public BobbyConfig(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     public boolean isEnabled() {
         return enabled;
     }

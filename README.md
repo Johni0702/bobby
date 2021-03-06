@@ -9,6 +9,10 @@ Optionally, it can also use an existing single player world to load in chunks wh
 To make use of this feature, simply rename the world folder (not the name of the world! the name of its folder!) to "bobby-fallback".
 
 Bobby automatically reloads its config file when it is changed.
+For an in-game config screen, install [ModMenu] and [ClothConfig].
+
+[ModMenu]: https://github.com/Prospector/ModMenu
+[ClothConfig]: https://github.com/shedaniel/cloth-config
 
 ## Setup
 
