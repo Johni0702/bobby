@@ -35,7 +35,7 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
-        if (Bobby.getInstance().getConfig().isEnabled()) {
+        if (Bobby.getInstance().isEnabled()) {
             bobbyChunkManager = createBobbyChunkManager(world);
         }
     }

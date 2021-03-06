@@ -1,4 +1,6 @@
 {
   "title.bobby.config": "Bobby Config",
-  "option.bobby.enabled": "Enabled"
+  "option.bobby.enabled": "Enabled",
+  "option.bobby.view_distance_overwrite": "Singleplayer Server View Distance",
+  "tooltip.option.bobby.view_distance_overwrite": "Overwrites the view-distance of the integrated server.\nThis allows Bobby to be useful in Singleplayer.\n\nDisabled when at 0.\nBobby is active in singleplayer only if this is enabled.\nRequires re-log to en-/disable."
 }

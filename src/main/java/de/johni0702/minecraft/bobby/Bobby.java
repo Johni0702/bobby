@@ -5,9 +5,11 @@ import me.shedaniel.clothconfig2.api.ConfigBuilder;
 import me.shedaniel.clothconfig2.api.ConfigCategory;
 import me.shedaniel.clothconfig2.api.ConfigEntryBuilder;
 import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
+import me.shedaniel.clothconfig2.gui.entries.IntegerSliderEntry;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.TranslatableText;
 import org.spongepowered.configurate.CommentedConfigurationNode;
@@ -22,6 +24,8 @@ public class Bobby implements ClientModInitializer {
     public static Bobby getInstance() {
         return instance;
     }
+
+    private static final MinecraftClient client = MinecraftClient.getInstance();
 
     private final ModContainer modContainer = FabricLoader.getInstance().getModContainer(Bobby.MOD_ID).orElseThrow(RuntimeException::new);
     private ValueReference<BobbyConfig, CommentedConfigurationNode> configReference;
@@ -41,6 +45,13 @@ public class Bobby implements ClientModInitializer {
         return configReference != null ? configReference.get() : BobbyConfig.DEFAULT;
     }
 
+    public boolean isEnabled() {
+        BobbyConfig config = getConfig();
+        return config.isEnabled()
+                // For singleplayer, disable ourselves unless the view-distance overwrite is active.
+                && (client.getServer() == null || config.getViewDistanceOverwrite() != 0);
+    }
+
     public Screen createConfigScreen(Screen parent) {
         BobbyConfig defaultConfig = BobbyConfig.DEFAULT;
         BobbyConfig config = getConfig();
@@ -57,11 +68,19 @@ public class Bobby implements ClientModInitializer {
                 .setDefaultValue(defaultConfig.isEnabled())
                 .build();
 
+        IntegerSliderEntry viewDistanceOverwrite = entryBuilder
+                .startIntSlider(new TranslatableText("option.bobby.view_distance_overwrite"), config.getViewDistanceOverwrite(), 0, 16)
+                .setTooltip(new TranslatableText("tooltip.option.bobby.view_distance_overwrite"))
+                .setDefaultValue(defaultConfig.getViewDistanceOverwrite())
+                .build();
+
         ConfigCategory general = builder.getOrCreateCategory(new TranslatableText("category.bobby.general"));
         general.addEntry(enabled);
+        general.addEntry(viewDistanceOverwrite);
 
         builder.setSavingRunnable(() -> configReference.setAndSaveAsync(new BobbyConfig(
-                enabled.getValue()
+                enabled.getValue(),
+                viewDistanceOverwrite.getValue()
         )));
 
         return builder.build();
