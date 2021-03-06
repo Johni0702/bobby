@@ -1,5 +1,6 @@
 package de.johni0702.minecraft.bobby.mixin;
 
+import de.johni0702.minecraft.bobby.Bobby;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
 import de.johni0702.minecraft.bobby.IClientChunkManager;
@@ -34,7 +35,9 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
-        bobbyChunkManager = createBobbyChunkManager(world);
+        if (Bobby.getInstance().getConfig().isEnabled()) {
+            bobbyChunkManager = createBobbyChunkManager(world);
+        }
     }
 
     protected FakeChunkManager createBobbyChunkManager(ClientWorld world) {
@@ -53,6 +56,10 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
             return;
         }
 
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
         // Otherwise, see if we've got one
         WorldChunk chunk = bobbyChunkManager.getChunk(x, z);
         if (chunk != null) {
@@ -62,11 +69,19 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
 
     @Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
     private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
         bobbyChunkManager.unload(x, z, true);
     }
 
     @Inject(method = "unload", at = @At("HEAD"))
     private void bobbySaveChunk(int chunkX, int chunkZ, CallbackInfo ci) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
         WorldChunk chunk = getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
         if (chunk == null) {
             return;
@@ -79,6 +94,10 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
 
     @Inject(method = "unload", at = @At("RETURN"))
     private void bobbyReplaceChunk(int chunkX, int chunkZ, CallbackInfo ci) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
         CompoundTag tag = bobbyChunkReplacement;
         bobbyChunkReplacement = null;
         if (tag == null || bobbyChunkManager.getChunk(chunkX, chunkZ) != null) {
@@ -89,6 +108,10 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
 
     @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)
     private void bobbyDebugString(CallbackInfoReturnable<String> cir) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
         cir.setReturnValue(cir.getReturnValue() + " " + bobbyChunkManager.getDebugString());
     }
 }

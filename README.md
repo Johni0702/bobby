@@ -8,6 +8,8 @@ then can load and display at a later point when the chunk is outside the server'
 Optionally, it can also use an existing single player world to load in chunks which the server has never sent before.
 To make use of this feature, simply rename the world folder (not the name of the world! the name of its folder!) to "bobby-fallback".
 
+Bobby automatically reloads its config file when it is changed.
+
 ## Setup
 
 For setup instructions please see the [fabric wiki page](https://fabricmc.net/wiki/tutorial:setup) that relates to the IDE that you are using.

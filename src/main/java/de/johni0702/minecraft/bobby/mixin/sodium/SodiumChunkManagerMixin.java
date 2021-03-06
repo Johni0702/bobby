@@ -39,6 +39,10 @@ public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
             return;
         }
 
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
         // Otherwise, see if we've got one
         WorldChunk chunk = bobbyChunkManager.getChunk(x, z);
         if (chunk != null) {
@@ -48,6 +52,10 @@ public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
 
     @Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
     private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
         if (bobbyChunkManager.getChunk(x, z) != null) {
             // We'll be replacing a fake chunk with a real one.
             // Suppress the chunk status listener so it does
@@ -75,6 +83,10 @@ public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
 
     @Inject(method = "unload", at = @At("HEAD"))
     private void bobbySaveChunk(int chunkX, int chunkZ, CallbackInfo ci) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
         WorldChunk chunk = getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
         if (chunk == null) {
             return;
@@ -109,6 +121,10 @@ public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
 
     @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)
     private void bobbyDebugString(CallbackInfoReturnable<String> cir) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
         cir.setReturnValue(cir.getReturnValue() + " " + bobbyChunkManager.getDebugString());
     }
 }

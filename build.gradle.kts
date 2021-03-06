@@ -12,10 +12,12 @@ dependencies {
 	val minecraftVersion: String by project
 	val yarnMappings: String by project
 	val loaderVersion: String by project
+	val confabricateVersion: String by project
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings("net.fabricmc:yarn:${yarnMappings}:v2")
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
 	modImplementation("com.github.jellysquid3:sodium-fabric:mc1.16.3-0.1.0")
+	modImplementation(include("ca.stellardrift:confabricate:$confabricateVersion")!!)
 }
 
 tasks.processResources {
