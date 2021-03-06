@@ -296,7 +296,7 @@ public class FakeChunkManager {
 
         ServerInfo serverInfo = client.getCurrentServerEntry();
         if (serverInfo != null) {
-            return serverInfo.address;
+            return serverInfo.address.replace(':', '_');
         }
 
         if (client.isConnectedToRealms()) {
