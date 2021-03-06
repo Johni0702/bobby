@@ -13,7 +13,7 @@
     "sources": "https://github.com/johni0702/bobby"
   },
 
-  "license": "GPL-3.0-or-later",
+  "license": "LGPL-3.0-or-later",
   "icon": "assets/bobby/icon.png",
 
   "environment": "client",

@@ -20,5 +20,5 @@ For setup instructions please see the [fabric wiki page](https://fabricmc.net/wi
 
 ## License
 
-Bobby is provided under the terms of the GNU General Public License Version 3 or (at your option) any later version.
-See LICENSE.md for the full license text.
+Bobby is provided under the terms of the GNU Lesser General Public License Version 3 or (at your option) any later version.
+See LICENSE.md and LICENSE.LESSER.md for the full license text.
