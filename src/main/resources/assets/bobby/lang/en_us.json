@@ -1,6 +1,8 @@
 {
   "title.bobby.config": "Bobby Config",
   "option.bobby.enabled": "Enabled",
+  "option.bobby.unload_delay": "Chunk Unload Delay (Seconds)",
+  "tooltip.option.bobby.unload_delay": "Delays the unloading of chunks which are outside your view distance.\nSaves you from having to reload all chunks when\nleaving an area for a short moment (e.g. cut scenes).\nDoes not work across dimensions.",
   "option.bobby.max_render_distance": "Max Render Distance",
   "tooltip.option.bobby.max_render_distance": "Changes the maximum value configurable for Render Distance.\n\nRequires Sodium.",
   "option.bobby.view_distance_overwrite": "Singleplayer Server View Distance",

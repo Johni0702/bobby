@@ -27,6 +27,12 @@ public class BobbyConfigScreenFactory {
                 .setDefaultValue(defaultConfig.isEnabled())
                 .build();
 
+        IntegerListEntry unloadDelaySecs = entryBuilder
+                .startIntField(new TranslatableText("option.bobby.unload_delay"), config.getUnloadDelaySecs())
+                .setTooltip(new TranslatableText("tooltip.option.bobby.unload_delay"))
+                .setDefaultValue(defaultConfig.getUnloadDelaySecs())
+                .build();
+
         IntegerListEntry maxRenderDistance = entryBuilder
                 .startIntField(new TranslatableText("option.bobby.max_render_distance"), config.getMaxRenderDistance())
                 .setTooltip(new TranslatableText("tooltip.option.bobby.max_render_distance"))
@@ -41,11 +47,13 @@ public class BobbyConfigScreenFactory {
 
         ConfigCategory general = builder.getOrCreateCategory(new TranslatableText("category.bobby.general"));
         general.addEntry(enabled);
+        general.addEntry(unloadDelaySecs);
         general.addEntry(maxRenderDistance);
         general.addEntry(viewDistanceOverwrite);
 
         builder.setSavingRunnable(() -> update.accept(new BobbyConfig(
                 enabled.getValue(),
+                unloadDelaySecs.getValue(),
                 maxRenderDistance.getValue(),
                 viewDistanceOverwrite.getValue()
         )));
