@@ -186,9 +186,6 @@ public class FakeChunkManager {
             long chunkPos = unloadingIter.nextLong();
             unloadingIter.remove();
             unload(ChunkPos.getPackedX(chunkPos), ChunkPos.getPackedZ(chunkPos), false);
-            if (!shouldKeepTicking.getAsBoolean()) {
-                break;
-            }
         }
 
         ObjectIterator<LoadingJob> loadingJobsIter = this.loadingJobs.values().iterator();
