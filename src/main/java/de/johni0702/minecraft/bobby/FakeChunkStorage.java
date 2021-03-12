@@ -1,5 +1,7 @@
 package de.johni0702.minecraft.bobby;
 
+import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
+import de.johni0702.minecraft.bobby.mixin.LightingProviderAccessor;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.DummyClientTickScheduler;
@@ -218,21 +220,22 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         return () -> {
             boolean hasSkyLight = world.getDimension().hasSkyLight();
             ChunkManager chunkManager = world.getChunkManager();
-            LightingProvider lightingProvider = chunkManager.getLightingProvider();
-            lightingProvider.setRetainData(pos, true);
+            LightingProviderAccessor lightingProvider = (LightingProviderAccessor) chunkManager.getLightingProvider();
+            ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
+            ChunkLightProviderExt skyLightProvider = (ChunkLightProviderExt) lightingProvider.getSkyLightProvider();
 
             for (int i = 0; i < sectionsTag.size(); i++) {
                 CompoundTag sectionTag = sectionsTag.getCompound(i);
                 int y = sectionTag.getByte("Y");
 
-                if (sectionTag.contains("BlockLight", 7)) {
-                    lightingProvider.enqueueSectionData(LightType.BLOCK, ChunkSectionPos.from(pos, y),
-                            new ChunkNibbleArray(sectionTag.getByteArray("BlockLight")), true);
+                if (sectionTag.contains("BlockLight", 7) && blockLightProvider != null) {
+                    blockLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(),
+                            new ChunkNibbleArray(sectionTag.getByteArray("BlockLight")));
                 }
 
-                if (hasSkyLight && sectionTag.contains("SkyLight", 7)) {
-                    lightingProvider.enqueueSectionData(LightType.SKY, ChunkSectionPos.from(pos, y),
-                            new ChunkNibbleArray(sectionTag.getByteArray("SkyLight")), true);
+                if (hasSkyLight && sectionTag.contains("SkyLight", 7) && skyLightProvider != null) {
+                    skyLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(),
+                            new ChunkNibbleArray(sectionTag.getByteArray("SkyLight")));
                 }
             }
 

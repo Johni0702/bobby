@@ -4,13 +4,12 @@
   "package": "de.johni0702.minecraft.bobby.mixin",
   "compatibilityLevel": "JAVA_8",
   "plugin": "de.johni0702.minecraft.bobby.MixinConfigPlugin",
-  "mixins": [
-    "BiomeAccessAccessor"
-  ],
   "client": [
+    "BiomeAccessAccessor",
+    "ChunkLightProviderMixin",
     "ClientChunkManagerMixin",
-    "ClientPlayNetworkHandlerMixin",
     "IntegratedServerMixin",
+    "LightingProviderAccessor",
     "MinecraftClientMixin",
     "sodium.SodiumChunkManagerAccessor",
     "sodium.SodiumChunkManagerMixin",

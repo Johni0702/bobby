@@ -1,6 +1,8 @@
 package de.johni0702.minecraft.bobby;
 
+import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
+import de.johni0702.minecraft.bobby.mixin.LightingProviderAccessor;
 import de.johni0702.minecraft.bobby.mixin.sodium.SodiumChunkManagerAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
@@ -40,10 +42,8 @@ import net.minecraft.util.thread.ReentrantThreadExecutor;
 import net.minecraft.world.SaveProperties;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.source.BiomeSource;
-import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
-import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.storage.LevelStorage;
 import org.jetbrains.annotations.Nullable;
 
@@ -242,19 +242,7 @@ public class FakeChunkManager {
     }
 
     protected void load(int x, int z, WorldChunk chunk) {
-        ChunkPos chunkPos = new ChunkPos(x, z);
-
         fakeChunks.put(ChunkPos.toLong(x, z), chunk);
-
-        LightingProvider lightingProvider = clientChunkManager.getLightingProvider();
-        lightingProvider.setColumnEnabled(chunkPos, true);
-        lightingProvider.setRetainData(chunkPos, false);
-
-        int y = 0;
-        for (ChunkSection section : chunk.getSectionArray()) {
-            lightingProvider.setSectionStatus(ChunkSectionPos.from(x, y, z), ChunkSection.isEmpty(section));
-            y++;
-        }
 
         world.resetChunkColor(x, z);
 
@@ -266,18 +254,21 @@ public class FakeChunkManager {
     public void unload(int x, int z, boolean willBeReplaced) {
         cancelLoad(x, z);
         WorldChunk chunk = fakeChunks.remove(ChunkPos.toLong(x, z));
-        if (chunk != null && !willBeReplaced) {
-            LightingProvider lightingProvider = clientChunkManager.getLightingProvider();
-
-            for (int y = 0; y < 16; y++) {
-                world.scheduleBlockRenders(x, y, z);
-                lightingProvider.setSectionStatus(ChunkSectionPos.from(x, y, z), true);
+        if (chunk != null) {
+            LightingProviderAccessor lightingProvider = (LightingProviderAccessor) clientChunkManager.getLightingProvider();
+            ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
+            ChunkLightProviderExt skyLightProvider = (ChunkLightProviderExt) lightingProvider.getSkyLightProvider();
+            for (int y = 0; y < chunk.getSectionArray().length; y++) {
+                if (blockLightProvider != null) {
+                    blockLightProvider.bobby_removeSectionData(ChunkSectionPos.asLong(x, y, z));
+                }
+                if (skyLightProvider != null) {
+                    skyLightProvider.bobby_removeSectionData(ChunkSectionPos.asLong(x, y, z));
+                }
             }
 
-            lightingProvider.setColumnEnabled(new ChunkPos(x, z), false);
-        }
-        if (chunk != null) {
-            world.unloadBlockEntities(chunk);
+            world.blockEntities.removeAll(chunk.getBlockEntities().values());
+            world.tickingBlockEntities.removeAll(chunk.getBlockEntities().values());
         }
     }
 
