@@ -239,6 +239,16 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 }
             }
 
+            // MC lazily loads block entities when they are first accessed.
+            // It does so in a thread-unsafe way though, so if they are first accessed from e.g. a render thread, this
+            // will cause threading issues (afaict thread-unsafe access to a chunk's block entities is still a problem
+            // even in vanilla, e.g. if a block entity is removed while it is accessed, but apparently no one at Mojang
+            // has run into that so far). To work around this, we force all block entities to be initialized
+            // immediately, before any other code gets access to the chunk.
+            for (BlockPos blockPos : chunk.getBlockEntityPositions()) {
+                chunk.getBlockEntity(blockPos);
+            }
+
             return chunk;
         };
     }
