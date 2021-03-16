@@ -193,6 +193,7 @@ public class FakeChunkManager {
 
         // Anything remaining in the set is no longer needed and can now be unloaded
         long unloadTime = time - config.getUnloadDelaySecs() * 1000L;
+        int countSinceLastThrottleCheck = 0;
         while (true) {
             Pair<Long, Long> next = unloadQueue.pollFirst();
             if (next == null) {
@@ -221,6 +222,13 @@ public class FakeChunkManager {
 
             // This chunk is due for unloading
             unload(ChunkPos.getPackedX(chunkPos), ChunkPos.getPackedZ(chunkPos), false);
+
+            if (countSinceLastThrottleCheck++ > 10) {
+                countSinceLastThrottleCheck = 0;
+                if (!shouldKeepTicking.getAsBoolean()) {
+                    break;
+                }
+            }
         }
 
         ObjectIterator<LoadingJob> loadingJobsIter = this.loadingJobs.values().iterator();
