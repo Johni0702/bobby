@@ -56,15 +56,15 @@ public abstract class SodiumChunkManagerMixin extends ClientChunkManagerMixin {
             return;
         }
 
-        if (bobbyChunkManager.getChunk(x, z) != null) {
-            // We'll be replacing a fake chunk with a real one.
-            // Suppress the chunk status listener so it does
-            // get removed before its re-rendered.
-            suppressedListener = listener;
-            listener = null;
+        // We'll be replacing a fake chunk with a real one.
+        // Suppress the chunk status listener so it does
+        // get removed before its re-rendered.
+        suppressedListener = listener;
+        listener = null;
 
-            bobbyChunkManager.unload(x, z, true);
-        }
+        // This needs to be called unconditionally because even if there is no chunk loaded at the moment,
+        // we might already have one queued which we need to cancel as otherwise it will overwrite the real one later.
+        bobbyChunkManager.unload(x, z, true);
     }
 
     @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
