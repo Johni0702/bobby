@@ -291,7 +291,7 @@ public class FakeChunkManager {
         }
     }
 
-    public void unload(int x, int z, boolean willBeReplaced) {
+    public boolean unload(int x, int z, boolean willBeReplaced) {
         cancelLoad(x, z);
         WorldChunk chunk = fakeChunks.remove(ChunkPos.toLong(x, z));
         if (chunk != null) {
@@ -309,7 +309,9 @@ public class FakeChunkManager {
 
             world.blockEntities.removeAll(chunk.getBlockEntities().values());
             world.tickingBlockEntities.removeAll(chunk.getBlockEntities().values());
+            return true;
         }
+        return false;
     }
 
     private void cancelLoad(int x, int z) {
@@ -429,13 +431,15 @@ public class FakeChunkManager {
         }
 
         @Override
-        public void unload(int x, int z, boolean willBeReplaced) {
-            super.unload(x, z, willBeReplaced);
+        public boolean unload(int x, int z, boolean willBeReplaced) {
+            boolean didUnload = super.unload(x, z, willBeReplaced);
 
             ChunkStatusListener listener = sodiumChunkManager.getListener();
-            if (listener != null) {
+            if (listener != null && didUnload) {
                 listener.onChunkRemoved(x, z);
             }
+
+            return didUnload;
         }
     }
 }
