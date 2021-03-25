@@ -1,6 +1,9 @@
 plugins {
 	id("fabric-loom") version "0.6-SNAPSHOT"
 	id("maven-publish")
+	id("com.github.breadmoirai.github-release") version "2.2.12"
+	id("com.matthewprenger.cursegradle") version "1.4.0"
+	id("com.modrinth.minotaur") version "1.1.0"
 }
 
 val modVersion: String by project
@@ -8,11 +11,11 @@ val mavenGroup: String by project
 version = modVersion
 group = mavenGroup
 
+val minecraftVersion: String by project
 val clothConfigVersion: String by project
 val modMenuVersion: String by project
 
 dependencies {
-	val minecraftVersion: String by project
 	val yarnMappings: String by project
 	val loaderVersion: String by project
 	val sodiumVersion: String by project
@@ -81,4 +84,70 @@ repositories {
 			includeGroup("com.terraformersmc")
 		}
 	}
+}
+
+fun readChangelog(): String {
+	val lines = project.file("CHANGELOG.md").readText().lineSequence().iterator()
+	if (lines.next() != "### ${project.version}") {
+		throw GradleException("CHANGELOG.md did not start with expected version!")
+	}
+	return lines.asSequence().takeWhile { it.isNotBlank() }.joinToString("\n")
+}
+
+githubRelease {
+	token { project.property("github.token") as String }
+	owner(project.property("github.owner") as String)
+	repo(project.property("github.repo") as String)
+	releaseName("Version ${project.version}")
+	releaseAssets(tasks.remapJar)
+	body(readChangelog())
+}
+
+curseforge {
+	// Would prefer to use lazy `project.property` but https://github.com/matthewprenger/CurseGradle/issues/32
+	apiKey = project.findProperty("curseforge.token") as String? ?: "DUMMY"
+	project(closureOf<com.matthewprenger.cursegradle.CurseProject> {
+		id = project.property("curseforge.id") as String
+		changelog = readChangelog()
+		releaseType = "release"
+		mainArtifact(tasks.remapJar.flatMap { it.archiveFile }, closureOf<com.matthewprenger.cursegradle.CurseArtifact> {
+			relations(closureOf<com.matthewprenger.cursegradle.CurseRelation> {
+				embeddedLibrary("confabricate")
+				optionalDependency("cloth-config")
+				optionalDependency("modmenu")
+				optionalDependency("sodium")
+			})
+		})
+		addGameVersion("Fabric")
+		addGameVersion(minecraftVersion)
+		addGameVersion("Java 8")
+		addGameVersion("Java 9")
+		addGameVersion("Java 10")
+	})
+	options(closureOf<com.matthewprenger.cursegradle.Options> {
+		javaVersionAutoDetect = false
+		javaIntegration = false
+		forgeGradleIntegration = false
+	})
+}
+tasks.withType<com.matthewprenger.cursegradle.CurseUploadTask> {
+	dependsOn(tasks.remapJar)
+}
+
+val publishModrinth by tasks.registering(com.modrinth.minotaur.TaskModrinthUpload::class) {
+	dependsOn(tasks.remapJar)
+	token = project.property("modrinth.token") as String
+	projectId = project.property("modrinth.id") as String
+	versionNumber = "${project.version}"
+	uploadFile = tasks.remapJar.flatMap { it.archiveFile }
+	changelog = readChangelog()
+	releaseType = "release"
+	addLoader("fabric")
+	addGameVersion(minecraftVersion)
+}
+
+val publishAll by tasks.registering {
+	dependsOn(tasks.curseforge)
+	dependsOn(tasks.githubRelease)
+	dependsOn(publishModrinth)
 }
