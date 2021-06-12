@@ -46,7 +46,7 @@ public class BobbyConfigScreenFactory {
                 .build();
 
         IntegerSliderEntry viewDistanceOverwrite = entryBuilder
-                .startIntSlider(new TranslatableText("option.bobby.view_distance_overwrite"), config.getViewDistanceOverwrite(), 0, 16)
+                .startIntSlider(new TranslatableText("option.bobby.view_distance_overwrite"), config.getViewDistanceOverwrite(), 0, 32)
                 .setTooltip(new TranslatableText("tooltip.option.bobby.view_distance_overwrite"))
                 .setDefaultValue(defaultConfig.getViewDistanceOverwrite())
                 .build();
