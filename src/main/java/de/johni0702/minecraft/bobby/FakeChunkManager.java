@@ -23,6 +23,7 @@ import net.minecraft.resource.FileResourcePackProvider;
 import net.minecraft.resource.ResourceManager;
 import net.minecraft.resource.ResourcePackManager;
 import net.minecraft.resource.ResourcePackSource;
+import net.minecraft.resource.ResourceType;
 import net.minecraft.resource.ServerResourceManager;
 import net.minecraft.resource.VanillaDataPackProvider;
 import net.minecraft.server.MinecraftServer;
@@ -144,8 +145,9 @@ public class FakeChunkManager {
         int oldCenterX = this.centerX;
         int oldCenterZ = this.centerZ;
         int oldViewDistance = this.viewDistance;
-        int newCenterX = player.chunkX;
-        int newCenterZ = player.chunkZ;
+        ChunkPos playerChunkPos = player.getChunkPos();
+        int newCenterX =  playerChunkPos.x;
+        int newCenterZ = playerChunkPos.z;
         int newViewDistance = client.options.viewDistance;
         if (oldCenterX != newCenterX || oldCenterZ != newCenterZ || oldViewDistance != newViewDistance) {
             // Firstly check which chunks can be unloaded / cancelled
@@ -285,9 +287,9 @@ public class FakeChunkManager {
     protected void load(int x, int z, WorldChunk chunk) {
         fakeChunks.put(ChunkPos.toLong(x, z), chunk);
 
-        world.resetChunkColor(x, z);
+        world.resetChunkColor(new ChunkPos(x, z));
 
-        for (int i = 0; i < 16; i++) {
+        for (int i = world.getBottomSectionCoord(); i < world.getTopSectionCoord(); i++) {
             world.scheduleBlockRenders(x, i, z);
         }
 
@@ -312,9 +314,6 @@ public class FakeChunkManager {
                     skyLightProvider.bobby_removeSectionData(ChunkSectionPos.asLong(x, y, z));
                 }
             }
-
-            world.blockEntities.removeAll(chunk.getBlockEntities().values());
-            world.tickingBlockEntities.removeAll(chunk.getBlockEntities().values());
 
             IChunkStatusListener listener = clientChunkManagerExt.bobby_getListener();
             if (listener != null) {
@@ -355,9 +354,11 @@ public class FakeChunkManager {
         // How difficult could this possibly be? Oh, right, datapacks are a thing
         // Mostly puzzled this together from how MinecraftClient starts the integrated server.
         try (ResourcePackManager resourcePackManager = new ResourcePackManager(
+                ResourceType.SERVER_DATA,
                 new VanillaDataPackProvider(),
                 new FileResourcePackProvider(session.getDirectory(WorldSavePath.DATAPACKS).toFile(), ResourcePackSource.PACK_SOURCE_WORLD)
         )) {
+            DynamicRegistryManager.Impl registryTracker = DynamicRegistryManager.create();
             DataPackSettings dataPackSettings = MinecraftServer.loadDataPacks(resourcePackManager, MinecraftClient.loadDataPackSettings(session), false);
             // We need our own executor, cause the MC one already has lots of packets in it
             Thread thread = Thread.currentThread();
@@ -379,6 +380,7 @@ public class FakeChunkManager {
             };
             CompletableFuture<ServerResourceManager> completableFuture = ServerResourceManager.reload(
                     resourcePackManager.createResourcePacks(),
+                    registryTracker,
                     CommandManager.RegistrationEnvironment.INTEGRATED,
                     2,
                     Util.getMainWorkerExecutor(),
@@ -387,7 +389,6 @@ public class FakeChunkManager {
             executor.runTasks(completableFuture::isDone);
             ServerResourceManager serverResourceManager = completableFuture.get();
             ResourceManager resourceManager = serverResourceManager.getResourceManager();
-            DynamicRegistryManager.Impl registryTracker = DynamicRegistryManager.create();
             SaveProperties saveProperties = MinecraftClient.createSaveProperties(session, registryTracker, resourceManager, dataPackSettings);
             return saveProperties.getGeneratorOptions().getChunkGenerator().getBiomeSource();
         }

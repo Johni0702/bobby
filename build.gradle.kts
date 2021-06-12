@@ -120,9 +120,7 @@ curseforge {
 		})
 		addGameVersion("Fabric")
 		addGameVersion(minecraftVersion)
-		addGameVersion("Java 8")
-		addGameVersion("Java 9")
-		addGameVersion("Java 10")
+		addGameVersion("Java 16")
 	})
 	options(closureOf<com.matthewprenger.cursegradle.Options> {
 		javaVersionAutoDetect = false

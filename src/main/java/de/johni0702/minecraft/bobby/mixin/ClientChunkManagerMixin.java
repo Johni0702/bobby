@@ -23,6 +23,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.BitSet;
+
 @Mixin(ClientChunkManager.class)
 public abstract class ClientChunkManagerMixin implements IClientChunkManager, ClientChunkManagerExt {
     @Shadow @Final private WorldChunk emptyChunk;
@@ -80,7 +82,7 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager, Cl
     }
 
     @Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
-    private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+    private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound nbt, BitSet bitSet, CallbackInfoReturnable<WorldChunk> cir) {
         if (bobbyChunkManager == null) {
             return;
         }
@@ -98,7 +100,7 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager, Cl
     }
 
     @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
-    private void bobbyFakeChunkReplaced(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+    private void bobbyFakeChunkReplaced(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound nbt, BitSet bitSet, CallbackInfoReturnable<WorldChunk> cir) {
         IChunkStatusListener listener = bobby_restoreListener();
         if (listener != null) {
             // However, if we failed to load the chunk from the packet for whatever reason,

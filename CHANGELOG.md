@@ -1,3 +1,6 @@
+### 2.0.0-SNAPSHOT
+- Update to Minecraft 1.17
+
 ### 1.2.0
 - Support for Sodium 0.2.0
 - Add option to disable loading of block entities in fake chunks, active by default

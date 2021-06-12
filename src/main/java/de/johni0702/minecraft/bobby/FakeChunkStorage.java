@@ -176,15 +176,15 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
         BiomeArray biomeArray;
         if (level.contains("Biomes", 11)) {
-            biomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), level.getIntArray("Biomes"));
+            biomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), world, level.getIntArray("Biomes"));
         } else if (biomeSource != null) {
-            biomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), chunkPos, biomeSource);
+            biomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), world, chunkPos, biomeSource);
         } else {
             LOGGER.error("Chunk file at {} has neither Biomes key nor biomeSource.", pos);
             return null;
         }
         NbtList sectionsTag = level.getList("Sections", 10);
-        ChunkSection[] chunkSections = new ChunkSection[16];
+        ChunkSection[] chunkSections = new ChunkSection[world.countVerticalSections()];
         ChunkNibbleArray[] blockLight = new ChunkNibbleArray[chunkSections.length];
         ChunkNibbleArray[] skyLight = new ChunkNibbleArray[chunkSections.length];
 
@@ -200,16 +200,16 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                         sectionTag.getLongArray("BlockStates"));
                 chunkSection.calculateCounts();
                 if (!chunkSection.isEmpty()) {
-                    chunkSections[y] = chunkSection;
+                    chunkSections[world.sectionCoordToIndex(y)] = chunkSection;
                 }
             }
 
             if (sectionTag.contains("BlockLight", 7)) {
-                blockLight[y] = new ChunkNibbleArray(sectionTag.getByteArray("BlockLight"));
+                blockLight[world.sectionCoordToIndex(y)] = new ChunkNibbleArray(sectionTag.getByteArray("BlockLight"));
             }
 
             if (sectionTag.contains("SkyLight", 7)) {
-                skyLight[y] = new ChunkNibbleArray(sectionTag.getByteArray("SkyLight"));
+                skyLight[world.sectionCoordToIndex(y)] = new ChunkNibbleArray(sectionTag.getByteArray("SkyLight"));
             }
         }
 
@@ -279,12 +279,13 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
             ChunkLightProviderExt skyLightProvider = (ChunkLightProviderExt) lightingProvider.getSkyLightProvider();
 
-            for (int y = 0; y < chunkSections.length; y++) {
+            for (int i = 0; i < chunkSections.length; i++) {
+                int y = world.sectionIndexToCoord(i);
                 if (blockLightProvider != null) {
-                    blockLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), blockLight[y]);
+                    blockLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), blockLight[i]);
                 }
                 if (skyLightProvider != null && hasSkyLight) {
-                    skyLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), skyLight[y]);
+                    skyLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), skyLight[i]);
                 }
             }
 
