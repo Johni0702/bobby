@@ -1,4 +1,4 @@
-### 2.0.0-SNAPSHOT
+### 2.0.0
 - Update to Minecraft 1.17
 
 ### 1.2.0
