@@ -6,6 +6,7 @@ import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.DummyClientTickScheduler;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLongArray;
 import net.minecraft.util.math.BlockPos;
@@ -175,7 +176,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         }
 
         BiomeArray biomeArray;
-        if (level.contains("Biomes", 11)) {
+        if (level.contains("Biomes", NbtElement.INT_ARRAY_TYPE)) {
             biomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), world, level.getIntArray("Biomes"));
         } else if (biomeSource != null) {
             biomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), world, chunkPos, biomeSource);
@@ -183,7 +184,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             LOGGER.error("Chunk file at {} has neither Biomes key nor biomeSource.", pos);
             return null;
         }
-        NbtList sectionsTag = level.getList("Sections", 10);
+        NbtList sectionsTag = level.getList("Sections", NbtElement.COMPOUND_TYPE);
         ChunkSection[] chunkSections = new ChunkSection[world.countVerticalSections()];
         ChunkNibbleArray[] blockLight = new ChunkNibbleArray[chunkSections.length];
         ChunkNibbleArray[] skyLight = new ChunkNibbleArray[chunkSections.length];
@@ -193,10 +194,10 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         for (int i = 0; i < sectionsTag.size(); i++) {
             NbtCompound sectionTag = sectionsTag.getCompound(i);
             int y = sectionTag.getByte("Y");
-            if (sectionTag.contains("Palette", 9) && sectionTag.contains("BlockStates", 12)) {
+            if (sectionTag.contains("Palette", NbtElement.LIST_TYPE) && sectionTag.contains("BlockStates", NbtElement.LONG_ARRAY_TYPE)) {
                 ChunkSection chunkSection = new ChunkSection(y << 4);
                 chunkSection.getContainer().read(
-                        sectionTag.getList("Palette", 10),
+                        sectionTag.getList("Palette", NbtElement.COMPOUND_TYPE),
                         sectionTag.getLongArray("BlockStates"));
                 chunkSection.calculateCounts();
                 if (!chunkSection.isEmpty()) {
@@ -204,11 +205,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 }
             }
 
-            if (sectionTag.contains("BlockLight", 7)) {
+            if (sectionTag.contains("BlockLight", NbtElement.BYTE_ARRAY_TYPE)) {
                 blockLight[world.sectionCoordToIndex(y)] = new ChunkNibbleArray(sectionTag.getByteArray("BlockLight"));
             }
 
-            if (sectionTag.contains("SkyLight", 7)) {
+            if (sectionTag.contains("SkyLight", NbtElement.BYTE_ARRAY_TYPE)) {
                 skyLight[world.sectionCoordToIndex(y)] = new ChunkNibbleArray(sectionTag.getByteArray("SkyLight"));
             }
         }
@@ -256,7 +257,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
         for (Heightmap.Type type : chunk.getStatus().getHeightmapTypes()) {
             String key = type.getName();
-            if (hightmapsTag.contains(key, 12)) {
+            if (hightmapsTag.contains(key, NbtElement.LONG_ARRAY_TYPE)) {
                 chunk.setHeightmap(type, hightmapsTag.getLongArray(key));
             } else {
                 missingHightmapTypes.add(type);
@@ -266,7 +267,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         Heightmap.populateHeightmaps(chunk, missingHightmapTypes);
 
         if (!config.isNoBlockEntities()) {
-            NbtList blockEntitiesTag = level.getList("TileEntities", 10);
+            NbtList blockEntitiesTag = level.getList("TileEntities", NbtElement.COMPOUND_TYPE);
             for (int i = 0; i < blockEntitiesTag.size(); i++) {
                 chunk.addPendingBlockEntityNbt(blockEntitiesTag.getCompound(i));
             }
