@@ -21,6 +21,7 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.ColumnChunkNibbleArray;
 import net.minecraft.world.chunk.UpgradeData;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
@@ -31,6 +32,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
@@ -40,6 +42,17 @@ import java.util.function.Supplier;
 public class FakeChunkStorage extends VersionedChunkStorage {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Map<File, FakeChunkStorage> active = new HashMap<>();
+    private static final ChunkNibbleArray COMPLETELY_DARK = new ChunkNibbleArray();
+    private static final ChunkNibbleArray COMPLETELY_LIT = new ChunkNibbleArray();
+    static {
+        for (int x = 0; x < 16; x++) {
+            for (int y = 0; y < 16; y++) {
+                for (int z = 0; z < 16; z++) {
+                    COMPLETELY_LIT.set(x, y, z, 15);
+                }
+            }
+        }
+    }
 
     public static FakeChunkStorage getFor(File file, BiomeSource biomeSource) {
         if (!MinecraftClient.getInstance().isOnThread()) {
@@ -172,6 +185,10 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         }
         ListTag sectionsTag = level.getList("Sections", 10);
         ChunkSection[] chunkSections = new ChunkSection[16];
+        ChunkNibbleArray[] blockLight = new ChunkNibbleArray[chunkSections.length];
+        ChunkNibbleArray[] skyLight = new ChunkNibbleArray[chunkSections.length];
+
+        Arrays.fill(blockLight, COMPLETELY_DARK);
 
         for (int i = 0; i < sectionsTag.size(); i++) {
             CompoundTag sectionTag = sectionsTag.getCompound(i);
@@ -186,6 +203,40 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                     chunkSections[y] = chunkSection;
                 }
             }
+
+            if (sectionTag.contains("BlockLight", 7)) {
+                blockLight[y] = new ChunkNibbleArray(sectionTag.getByteArray("BlockLight"));
+            }
+
+            if (sectionTag.contains("SkyLight", 7)) {
+                skyLight[y] = new ChunkNibbleArray(sectionTag.getByteArray("SkyLight"));
+            }
+        }
+
+        // Not all light sections are stored. For block light we simply fall back to a completely dark section.
+        // For sky light we need to compute the section based on those above it. We are going top to bottom section.
+
+        // The nearest section data read from storage
+        ChunkNibbleArray fullSectionAbove = null;
+        // The nearest section data computed from the one above (based on its bottom-most layer).
+        // May be re-used for multiple sections once computed.
+        ChunkNibbleArray inferredSection = COMPLETELY_LIT;
+        for (int y = skyLight.length - 1; y >= 0; y--) {
+            ChunkNibbleArray section = skyLight[y];
+
+            // If we found a section, invalidate our inferred section cache and store it for later
+            if (section != null) {
+                inferredSection = null;
+                fullSectionAbove = section;
+                continue;
+            }
+
+            // If we are missing a section, infer it from the previous full section (the result of that can be re-used)
+            if (inferredSection == null) {
+                assert fullSectionAbove != null; // we only clear the cache when we set this
+                inferredSection = new ChunkNibbleArray((new ColumnChunkNibbleArray(fullSectionAbove, 0)).asByteArray());
+            }
+            skyLight[y] = inferredSection;
         }
 
         WorldChunk chunk = new WorldChunk(
@@ -228,18 +279,12 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
             ChunkLightProviderExt skyLightProvider = (ChunkLightProviderExt) lightingProvider.getSkyLightProvider();
 
-            for (int i = 0; i < sectionsTag.size(); i++) {
-                CompoundTag sectionTag = sectionsTag.getCompound(i);
-                int y = sectionTag.getByte("Y");
-
-                if (sectionTag.contains("BlockLight", 7) && blockLightProvider != null) {
-                    blockLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(),
-                            new ChunkNibbleArray(sectionTag.getByteArray("BlockLight")));
+            for (int y = 0; y < chunkSections.length; y++) {
+                if (blockLightProvider != null) {
+                    blockLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), blockLight[y]);
                 }
-
-                if (hasSkyLight && sectionTag.contains("SkyLight", 7) && skyLightProvider != null) {
-                    skyLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(),
-                            new ChunkNibbleArray(sectionTag.getByteArray("SkyLight")));
+                if (skyLightProvider != null && hasSkyLight) {
+                    skyLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), skyLight[y]);
                 }
             }
 
