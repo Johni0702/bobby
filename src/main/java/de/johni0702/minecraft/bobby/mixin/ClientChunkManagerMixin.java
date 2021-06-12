@@ -4,6 +4,8 @@ import de.johni0702.minecraft.bobby.Bobby;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
 import de.johni0702.minecraft.bobby.IClientChunkManager;
+import de.johni0702.minecraft.bobby.compat.IChunkStatusListener;
+import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.CompoundTag;
@@ -22,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(ClientChunkManager.class)
-public abstract class ClientChunkManagerMixin implements IClientChunkManager {
+public abstract class ClientChunkManagerMixin implements IClientChunkManager, ClientChunkManagerExt {
     @Shadow @Final private WorldChunk emptyChunk;
 
     @Shadow @Nullable public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
@@ -36,17 +38,27 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
         if (Bobby.getInstance().isEnabled()) {
-            bobbyChunkManager = createBobbyChunkManager(world);
+            bobbyChunkManager = new FakeChunkManager(world, (ClientChunkManager) (Object) this);
         }
-    }
-
-    protected FakeChunkManager createBobbyChunkManager(ClientWorld world) {
-        return new FakeChunkManager(world, (ClientChunkManager) (Object) this);
     }
 
     @Override
     public FakeChunkManager getBobbyChunkManager() {
         return bobbyChunkManager;
+    }
+
+    @Override
+    public IChunkStatusListener bobby_getListener() {
+        return null;
+    }
+
+    @Override
+    public void bobby_suppressListener() {
+    }
+
+    @Override
+    public IChunkStatusListener bobby_restoreListener() {
+        return null;
     }
 
     @Inject(method = "getChunk", at = @At("RETURN"), cancellable = true)
@@ -73,7 +85,28 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
             return;
         }
 
+        if (bobbyChunkManager.getChunk(x, z) != null) {
+            // We'll be replacing a fake chunk with a real one.
+            // Suppress the chunk status listener so the chunk mesh does
+            // not get removed before it is re-rendered.
+            bobby_suppressListener();
+        }
+
+        // This needs to be called unconditionally because even if there is no chunk loaded at the moment,
+        // we might already have one queued which we need to cancel as otherwise it will overwrite the real one later.
         bobbyChunkManager.unload(x, z, true);
+    }
+
+    @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
+    private void bobbyFakeChunkReplaced(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+        IChunkStatusListener listener = bobby_restoreListener();
+        if (listener != null) {
+            // However, if we failed to load the chunk from the packet for whatever reason,
+            // we need to notify the listener that the chunk has indeed been unloaded.
+            if (getChunk(x, z, ChunkStatus.FULL, false) == null) {
+                listener.onChunkRemoved(x, z);
+            }
+        }
     }
 
     @Inject(method = "unload", at = @At("HEAD"))
@@ -86,6 +119,12 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
         if (chunk == null) {
             return;
         }
+
+        // We'll be replacing a fake chunk with a real one.
+        // Suppress the chunk status listener so the chunk mesh does
+        // not get removed before it is re-rendered.
+        bobby_suppressListener();
+
         FakeChunkStorage storage = bobbyChunkManager.getStorage();
         CompoundTag tag = storage.serialize(chunk, getLightingProvider());
         storage.save(chunk.getPos(), tag);
@@ -100,10 +139,12 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager {
 
         CompoundTag tag = bobbyChunkReplacement;
         bobbyChunkReplacement = null;
-        if (tag == null || bobbyChunkManager.getChunk(chunkX, chunkZ) != null) {
+        if (tag == null) {
             return;
         }
         bobbyChunkManager.load(chunkX, chunkZ, tag, bobbyChunkManager.getStorage());
+
+        bobby_restoreListener();
     }
 
     @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)

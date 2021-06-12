@@ -23,7 +23,7 @@ dependencies {
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings("net.fabricmc:yarn:${yarnMappings}:v2")
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
-	modImplementation("com.github.jellysquid3:sodium-fabric:$sodiumVersion")
+	modCompileOnly("com.github.jellysquid3:sodium-fabric:$sodiumVersion")
 	modImplementation(include("ca.stellardrift:confabricate:$confabricateVersion")!!)
 	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")
 	modImplementation("com.terraformersmc:modmenu:$modMenuVersion")

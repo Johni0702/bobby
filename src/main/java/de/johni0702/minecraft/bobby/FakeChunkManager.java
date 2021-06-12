@@ -1,9 +1,10 @@
 package de.johni0702.minecraft.bobby;
 
+import de.johni0702.minecraft.bobby.compat.IChunkStatusListener;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
+import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
 import de.johni0702.minecraft.bobby.mixin.LightingProviderAccessor;
-import de.johni0702.minecraft.bobby.mixin.sodium.SodiumChunkManagerAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
@@ -11,8 +12,6 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
-import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
-import me.jellysquid.mods.sodium.client.world.SodiumChunkManager;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ServerInfo;
@@ -65,6 +64,7 @@ public class FakeChunkManager {
 
     private final ClientWorld world;
     private final ClientChunkManager clientChunkManager;
+    private final ClientChunkManagerExt clientChunkManagerExt;
     private final FakeChunkStorage storage;
     private final @Nullable FakeChunkStorage fallbackStorage;
     private int ticksSinceLastSave;
@@ -87,6 +87,7 @@ public class FakeChunkManager {
     public FakeChunkManager(ClientWorld world, ClientChunkManager clientChunkManager) {
         this.world = world;
         this.clientChunkManager = clientChunkManager;
+        this.clientChunkManagerExt = (ClientChunkManagerExt) clientChunkManager;
 
         long seedHash = ((BiomeAccessAccessor) world.getBiomeAccess()).getSeed();
         RegistryKey<World> worldKey = world.getRegistryKey();
@@ -289,6 +290,11 @@ public class FakeChunkManager {
         for (int i = 0; i < 16; i++) {
             world.scheduleBlockRenders(x, i, z);
         }
+
+        IChunkStatusListener listener = clientChunkManagerExt.bobby_getListener();
+        if (listener != null) {
+            listener.onChunkAdded(x, z);
+        }
     }
 
     public boolean unload(int x, int z, boolean willBeReplaced) {
@@ -309,6 +315,12 @@ public class FakeChunkManager {
 
             world.blockEntities.removeAll(chunk.getBlockEntities().values());
             world.tickingBlockEntities.removeAll(chunk.getBlockEntities().values());
+
+            IChunkStatusListener listener = clientChunkManagerExt.bobby_getListener();
+            if (listener != null) {
+                listener.onChunkRemoved(x, z);
+            }
+
             return true;
         }
         return false;
@@ -408,38 +420,6 @@ public class FakeChunkManager {
 
         public void complete() {
             result.ifPresent(it -> load(x, z, it.get()));
-        }
-    }
-
-    public static class Sodium extends FakeChunkManager {
-
-        private final SodiumChunkManagerAccessor sodiumChunkManager;
-
-        public Sodium(ClientWorld world, SodiumChunkManager sodiumChunkManager) {
-            super(world, sodiumChunkManager);
-            this.sodiumChunkManager = (SodiumChunkManagerAccessor) sodiumChunkManager;
-        }
-
-        @Override
-        protected void load(int x, int z, WorldChunk chunk) {
-            super.load(x, z, chunk);
-
-            ChunkStatusListener listener = sodiumChunkManager.getListener();
-            if (listener != null) {
-                listener.onChunkAdded(x, z);
-            }
-        }
-
-        @Override
-        public boolean unload(int x, int z, boolean willBeReplaced) {
-            boolean didUnload = super.unload(x, z, willBeReplaced);
-
-            ChunkStatusListener listener = sodiumChunkManager.getListener();
-            if (listener != null && didUnload) {
-                listener.onChunkRemoved(x, z);
-            }
-
-            return didUnload;
         }
     }
 }

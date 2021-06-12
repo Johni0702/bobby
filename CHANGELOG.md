@@ -1,4 +1,5 @@
 ### 1.2.0-SNAPSHOT
+- Support for Sodium 0.2.0
 - Add option to disable loading of block entities in fake chunks, active by default
 - Fix maximum value of view distance overwrite slider to be 32 instead of 16 (#21)
 

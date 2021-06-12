@@ -37,6 +37,9 @@
     "cloth-config2": "^${clothConfigVersion}",
     "modmenu": "^${modMenuVersion}"
   },
+  "breaks": {
+    "sodium": "<0.2.0"
+  },
 
   "custom": {
   }
