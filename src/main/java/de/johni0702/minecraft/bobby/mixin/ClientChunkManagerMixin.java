@@ -8,7 +8,7 @@ import de.johni0702.minecraft.bobby.compat.IChunkStatusListener;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -33,7 +33,7 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager, Cl
     protected FakeChunkManager bobbyChunkManager;
     // Cache of chunk which was just unloaded so we can immediately
     // load it again without having to wait for the storage io worker.
-    protected  @Nullable CompoundTag bobbyChunkReplacement;
+    protected  @Nullable NbtCompound bobbyChunkReplacement;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
@@ -80,7 +80,7 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager, Cl
     }
 
     @Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
-    private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+    private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
         if (bobbyChunkManager == null) {
             return;
         }
@@ -98,7 +98,7 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager, Cl
     }
 
     @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
-    private void bobbyFakeChunkReplaced(int x, int z, BiomeArray biomes, PacketByteBuf buf, CompoundTag tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
+    private void bobbyFakeChunkReplaced(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound tag, int verticalStripBitmask, boolean complete, CallbackInfoReturnable<WorldChunk> cir) {
         IChunkStatusListener listener = bobby_restoreListener();
         if (listener != null) {
             // However, if we failed to load the chunk from the packet for whatever reason,
@@ -126,7 +126,7 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager, Cl
         bobby_suppressListener();
 
         FakeChunkStorage storage = bobbyChunkManager.getStorage();
-        CompoundTag tag = storage.serialize(chunk, getLightingProvider());
+        NbtCompound tag = storage.serialize(chunk, getLightingProvider());
         storage.save(chunk.getPos(), tag);
         bobbyChunkReplacement = tag;
     }
@@ -137,7 +137,7 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager, Cl
             return;
         }
 
-        CompoundTag tag = bobbyChunkReplacement;
+        NbtCompound tag = bobbyChunkReplacement;
         bobbyChunkReplacement = null;
         if (tag == null) {
             return;

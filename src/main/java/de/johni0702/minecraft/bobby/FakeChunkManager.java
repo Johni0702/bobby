@@ -17,7 +17,7 @@ import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.resource.DataPackSettings;
 import net.minecraft.resource.FileResourcePackProvider;
 import net.minecraft.resource.ResourceManager;
@@ -254,9 +254,9 @@ public class FakeChunkManager {
         }
     }
 
-    private @Nullable Pair<CompoundTag, FakeChunkStorage> loadTag(int x, int z) {
+    private @Nullable Pair<NbtCompound, FakeChunkStorage> loadTag(int x, int z) {
         ChunkPos chunkPos = new ChunkPos(x, z);
-        CompoundTag tag;
+        NbtCompound tag;
         try {
             tag = storage.loadTag(chunkPos);
             if (tag != null) {
@@ -274,7 +274,7 @@ public class FakeChunkManager {
         return null;
     }
 
-    public void load(int x, int z, CompoundTag tag, FakeChunkStorage storage) {
+    public void load(int x, int z, NbtCompound tag, FakeChunkStorage storage) {
         Supplier<WorldChunk> chunkSupplier = storage.deserialize(new ChunkPos(x, z), tag, world);
         if (chunkSupplier == null) {
             return;
@@ -358,7 +358,7 @@ public class FakeChunkManager {
                 new VanillaDataPackProvider(),
                 new FileResourcePackProvider(session.getDirectory(WorldSavePath.DATAPACKS).toFile(), ResourcePackSource.PACK_SOURCE_WORLD)
         )) {
-            DataPackSettings dataPackSettings = MinecraftServer.loadDataPacks(resourcePackManager, MinecraftClient.method_29598(session), false);
+            DataPackSettings dataPackSettings = MinecraftServer.loadDataPacks(resourcePackManager, MinecraftClient.loadDataPackSettings(session), false);
             // We need our own executor, cause the MC one already has lots of packets in it
             Thread thread = Thread.currentThread();
             ReentrantThreadExecutor<Runnable> executor = new ReentrantThreadExecutor<Runnable>("") {

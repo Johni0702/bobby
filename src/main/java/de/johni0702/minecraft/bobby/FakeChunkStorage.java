@@ -5,9 +5,9 @@ import de.johni0702.minecraft.bobby.mixin.LightingProviderAccessor;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.DummyClientTickScheduler;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.LongArrayTag;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtList;
+import net.minecraft.nbt.NbtLongArray;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -79,29 +79,29 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         this.biomeSource = biomeSource;
     }
 
-    public void save(ChunkPos pos, CompoundTag chunk) {
-        CompoundTag tag = new CompoundTag();
+    public void save(ChunkPos pos, NbtCompound chunk) {
+        NbtCompound tag = new NbtCompound();
         tag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
         tag.put("Level", chunk);
-        setTagAt(pos, tag);
+        setNbt(pos, tag);
     }
 
-    public @Nullable CompoundTag loadTag(ChunkPos pos) throws IOException {
-        CompoundTag tag = getNbt(pos);
+    public @Nullable NbtCompound loadTag(ChunkPos pos) throws IOException {
+        NbtCompound tag = getNbt(pos);
         if (tag == null) {
             return null;
         }
         return tag.getCompound("Level");
     }
 
-    public CompoundTag serialize(Chunk chunk, LightingProvider lightingProvider) {
+    public NbtCompound serialize(Chunk chunk, LightingProvider lightingProvider) {
         ChunkPos chunkPos = chunk.getPos();
-        CompoundTag level = new CompoundTag();
+        NbtCompound level = new NbtCompound();
         level.putInt("xPos", chunkPos.x);
         level.putInt("zPos", chunkPos.z);
 
         ChunkSection[] chunkSections = chunk.getSectionArray();
-        ListTag sectionsTag = new ListTag();
+        NbtList sectionsTag = new NbtList();
 
         for (ChunkSection chunkSection : chunkSections) {
             if (chunkSection == null) {
@@ -110,7 +110,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             int y = chunkSection.getYOffset() >> 4;
             boolean empty = true;
 
-            CompoundTag sectionTag = new CompoundTag();
+            NbtCompound sectionTag = new NbtCompound();
             sectionTag.putByte("Y", (byte) y);
 
             if (chunkSection != WorldChunk.EMPTY_SECTION) {
@@ -142,19 +142,19 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             level.putIntArray("Biomes", biomeArray.toIntArray());
         }
 
-        ListTag blockEntitiesTag = new ListTag();
+        NbtList blockEntitiesTag = new NbtList();
         for (BlockPos pos : chunk.getBlockEntityPositions()) {
-            CompoundTag blockEntityTag = chunk.getPackedBlockEntityTag(pos);
+            NbtCompound blockEntityTag = chunk.getPackedBlockEntityNbt(pos);
             if (blockEntityTag != null) {
                 blockEntitiesTag.add(blockEntityTag);
             }
         }
         level.put("TileEntities", blockEntitiesTag);
 
-        CompoundTag hightmapsTag = new CompoundTag();
+        NbtCompound hightmapsTag = new NbtCompound();
         for (Map.Entry<Heightmap.Type, Heightmap> entry : chunk.getHeightmaps()) {
             if (chunk.getStatus().getHeightmapTypes().contains(entry.getKey())) {
-                hightmapsTag.put(entry.getKey().getName(), new LongArrayTag(entry.getValue().asLongArray()));
+                hightmapsTag.put(entry.getKey().getName(), new NbtLongArray(entry.getValue().asLongArray()));
             }
         }
         level.put("Heightmaps", hightmapsTag);
@@ -166,7 +166,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     //       must be unlikely to loose that thread safety in the presence of third party mods) or must be delayed
     //       by moving them into the returned supplier which is executed on the main thread.
     //       For performance reasons though: The more stuff we can do async, the better.
-    public @Nullable Supplier<WorldChunk> deserialize(ChunkPos pos, CompoundTag level, World world) {
+    public @Nullable Supplier<WorldChunk> deserialize(ChunkPos pos, NbtCompound level, World world) {
         BobbyConfig config = Bobby.getInstance().getConfig();
 
         ChunkPos chunkPos = new ChunkPos(level.getInt("xPos"), level.getInt("zPos"));
@@ -183,7 +183,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             LOGGER.error("Chunk file at {} has neither Biomes key nor biomeSource.", pos);
             return null;
         }
-        ListTag sectionsTag = level.getList("Sections", 10);
+        NbtList sectionsTag = level.getList("Sections", 10);
         ChunkSection[] chunkSections = new ChunkSection[16];
         ChunkNibbleArray[] blockLight = new ChunkNibbleArray[chunkSections.length];
         ChunkNibbleArray[] skyLight = new ChunkNibbleArray[chunkSections.length];
@@ -191,7 +191,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         Arrays.fill(blockLight, COMPLETELY_DARK);
 
         for (int i = 0; i < sectionsTag.size(); i++) {
-            CompoundTag sectionTag = sectionsTag.getCompound(i);
+            NbtCompound sectionTag = sectionsTag.getCompound(i);
             int y = sectionTag.getByte("Y");
             if (sectionTag.contains("Palette", 9) && sectionTag.contains("BlockStates", 12)) {
                 ChunkSection chunkSection = new ChunkSection(y << 4);
@@ -251,7 +251,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 null
         );
 
-        CompoundTag hightmapsTag = level.getCompound("Heightmaps");
+        NbtCompound hightmapsTag = level.getCompound("Heightmaps");
         EnumSet<Heightmap.Type> missingHightmapTypes = EnumSet.noneOf(Heightmap.Type.class);
 
         for (Heightmap.Type type : chunk.getStatus().getHeightmapTypes()) {
@@ -266,9 +266,9 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         Heightmap.populateHeightmaps(chunk, missingHightmapTypes);
 
         if (!config.isNoBlockEntities()) {
-            ListTag blockEntitiesTag = level.getList("TileEntities", 10);
+            NbtList blockEntitiesTag = level.getList("TileEntities", 10);
             for (int i = 0; i < blockEntitiesTag.size(); i++) {
-                chunk.addPendingBlockEntityTag(blockEntitiesTag.getCompound(i));
+                chunk.addPendingBlockEntityNbt(blockEntitiesTag.getCompound(i));
             }
         }
 
