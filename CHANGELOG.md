@@ -1,3 +1,5 @@
+### 1.2.0-SNAPSHOT
+
 ### 1.1.4
 - Fix chunk flicker with Sodium when real chunk receives full update
 
