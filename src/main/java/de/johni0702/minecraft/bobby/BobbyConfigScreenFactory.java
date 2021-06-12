@@ -27,6 +27,12 @@ public class BobbyConfigScreenFactory {
                 .setDefaultValue(defaultConfig.isEnabled())
                 .build();
 
+        BooleanListEntry noBlockEntities = entryBuilder
+                .startBooleanToggle(new TranslatableText("option.bobby.no_block_entities"), config.isNoBlockEntities())
+                .setTooltip(new TranslatableText("tooltip.option.bobby.no_block_entities"))
+                .setDefaultValue(defaultConfig.isNoBlockEntities())
+                .build();
+
         IntegerListEntry unloadDelaySecs = entryBuilder
                 .startIntField(new TranslatableText("option.bobby.unload_delay"), config.getUnloadDelaySecs())
                 .setTooltip(new TranslatableText("tooltip.option.bobby.unload_delay"))
@@ -47,12 +53,14 @@ public class BobbyConfigScreenFactory {
 
         ConfigCategory general = builder.getOrCreateCategory(new TranslatableText("category.bobby.general"));
         general.addEntry(enabled);
+        general.addEntry(noBlockEntities);
         general.addEntry(unloadDelaySecs);
         general.addEntry(maxRenderDistance);
         general.addEntry(viewDistanceOverwrite);
 
         builder.setSavingRunnable(() -> update.accept(new BobbyConfig(
                 enabled.getValue(),
+                noBlockEntities.getValue(),
                 unloadDelaySecs.getValue(),
                 maxRenderDistance.getValue(),
                 viewDistanceOverwrite.getValue()

@@ -154,6 +154,8 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     //       by moving them into the returned supplier which is executed on the main thread.
     //       For performance reasons though: The more stuff we can do async, the better.
     public @Nullable Supplier<WorldChunk> deserialize(ChunkPos pos, CompoundTag level, World world) {
+        BobbyConfig config = Bobby.getInstance().getConfig();
+
         ChunkPos chunkPos = new ChunkPos(level.getInt("xPos"), level.getInt("zPos"));
         if (!Objects.equals(pos, chunkPos)) {
             LOGGER.error("Chunk file at {} is in the wrong location; relocating. (Expected {}, got {})", pos, pos, chunkPos);
@@ -212,9 +214,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
         Heightmap.populateHeightmaps(chunk, missingHightmapTypes);
 
-        ListTag blockEntitiesTag = level.getList("TileEntities", 10);
-        for (int i = 0; i < blockEntitiesTag.size(); i++) {
-            chunk.addPendingBlockEntityTag(blockEntitiesTag.getCompound(i));
+        if (!config.isNoBlockEntities()) {
+            ListTag blockEntitiesTag = level.getList("TileEntities", 10);
+            for (int i = 0; i < blockEntitiesTag.size(); i++) {
+                chunk.addPendingBlockEntityTag(blockEntitiesTag.getCompound(i));
+            }
         }
 
         return () -> {

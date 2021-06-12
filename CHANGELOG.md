@@ -1,4 +1,5 @@
 ### 1.2.0-SNAPSHOT
+- Add option to disable loading of block entities in fake chunks, active by default
 
 ### 1.1.4
 - Fix chunk flicker with Sodium when real chunk receives full update
