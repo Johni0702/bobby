@@ -1,3 +1,5 @@
+### 1.2.1-SNAPSHOT
+
 ### 1.2.0
 - Support for Sodium 0.2.0
 - Add option to disable loading of block entities in fake chunks, active by default
