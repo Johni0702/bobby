@@ -256,6 +256,12 @@ public class FakeChunkManager {
         }
     }
 
+    public boolean shouldBeLoaded(int x, int z) {
+        boolean xInside = x >= centerX - viewDistance && x <= centerX + viewDistance;
+        boolean zInside = z >= centerZ - viewDistance && z <= centerZ + viewDistance;
+        return xInside && zInside;
+    }
+
     private @Nullable Pair<NbtCompound, FakeChunkStorage> loadTag(int x, int z) {
         ChunkPos chunkPos = new ChunkPos(x, z);
         NbtCompound tag;

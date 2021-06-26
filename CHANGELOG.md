@@ -1,5 +1,6 @@
 ### 2.0.1-SNAPSHOT
 - Fix chunk light not properly unloading in tall worlds (#28)
+- Fix chunks leaking if client view distance is not greater than server view distance
 
 ### 2.0.0
 - Update to Minecraft 1.17

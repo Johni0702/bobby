@@ -122,14 +122,18 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager, Cl
             return;
         }
 
+        FakeChunkStorage storage = bobbyChunkManager.getStorage();
+        NbtCompound tag = storage.serialize(chunk, getLightingProvider());
+        storage.save(chunk.getPos(), tag);
+
+        if (!bobbyChunkManager.shouldBeLoaded(chunkX, chunkZ)) {
+            return;
+        }
+
         // We'll be replacing a fake chunk with a real one.
         // Suppress the chunk status listener so the chunk mesh does
         // not get removed before it is re-rendered.
         bobby_suppressListener();
-
-        FakeChunkStorage storage = bobbyChunkManager.getStorage();
-        NbtCompound tag = storage.serialize(chunk, getLightingProvider());
-        storage.save(chunk.getPos(), tag);
         bobbyChunkReplacement = tag;
     }
 
