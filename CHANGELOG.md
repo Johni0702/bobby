@@ -2,6 +2,7 @@
 - Fix AIOOB exception due to incorrect Y position of fake chunk sections (#27)
 - Fix chunk light not properly unloading in tall worlds (#28)
 - Fix chunks leaking if client view distance is not greater than server view distance
+- Fix chunks reloading when changing render distance with Sodium
 
 ### 2.0.0
 - Update to Minecraft 1.17
