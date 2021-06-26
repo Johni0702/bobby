@@ -306,7 +306,8 @@ public class FakeChunkManager {
             LightingProviderAccessor lightingProvider = (LightingProviderAccessor) clientChunkManager.getLightingProvider();
             ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
             ChunkLightProviderExt skyLightProvider = (ChunkLightProviderExt) lightingProvider.getSkyLightProvider();
-            for (int y = 0; y < chunk.getSectionArray().length; y++) {
+            for (int i = 0; i < chunk.getSectionArray().length; i++) {
+                int y = world.sectionIndexToCoord(i);
                 if (blockLightProvider != null) {
                     blockLightProvider.bobby_removeSectionData(ChunkSectionPos.asLong(x, y, z));
                 }
