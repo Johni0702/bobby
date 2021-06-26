@@ -1,4 +1,5 @@
 ### 1.2.1-SNAPSHOT
+- Fix chunks reloading when changing render distance with Sodium
 
 ### 1.2.0
 - Support for Sodium 0.2.0
