@@ -194,8 +194,23 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         for (int i = 0; i < sectionsTag.size(); i++) {
             NbtCompound sectionTag = sectionsTag.getCompound(i);
             int y = sectionTag.getByte("Y");
+
+            if (y < world.getBottomSectionCoord() || y >= world.getTopSectionCoord()) {
+                // There used to be a bug where we pass the block coordinates to the ChunkSection constructor (as was
+                // done in 1.16) but the constructor expects section coordinates now, leading to an incorrect y position
+                // being stored in the ChunkSection. And under specific circumstances (a chunk unload packet without
+                // prior chunk load packet) we ended up saving those again, leading to this index out of bounds
+                // condition.
+                // We cannot just undo the scaling here because the Y stored to disk is only a byte, so the real Y may
+                // have overflown. Instead we will just ignore all sections for broken chunks.
+                Arrays.fill(chunkSections, null);
+                Arrays.fill(blockLight, COMPLETELY_DARK);
+                Arrays.fill(skyLight, null);
+                break;
+            }
+
             if (sectionTag.contains("Palette", NbtElement.LIST_TYPE) && sectionTag.contains("BlockStates", NbtElement.LONG_ARRAY_TYPE)) {
-                ChunkSection chunkSection = new ChunkSection(y << 4);
+                ChunkSection chunkSection = new ChunkSection(y);
                 chunkSection.getContainer().read(
                         sectionTag.getList("Palette", NbtElement.COMPOUND_TYPE),
                         sectionTag.getLongArray("BlockStates"));
