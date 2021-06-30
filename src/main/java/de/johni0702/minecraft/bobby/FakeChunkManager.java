@@ -1,6 +1,5 @@
 package de.johni0702.minecraft.bobby;
 
-import de.johni0702.minecraft.bobby.compat.IChunkStatusListener;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
@@ -299,10 +298,7 @@ public class FakeChunkManager {
             world.scheduleBlockRenders(x, i, z);
         }
 
-        IChunkStatusListener listener = clientChunkManagerExt.bobby_getListener();
-        if (listener != null) {
-            listener.onChunkAdded(x, z);
-        }
+        clientChunkManagerExt.bobby_onFakeChunkAdded(x, z);
     }
 
     public boolean unload(int x, int z, boolean willBeReplaced) {
@@ -322,10 +318,7 @@ public class FakeChunkManager {
                 }
             }
 
-            IChunkStatusListener listener = clientChunkManagerExt.bobby_getListener();
-            if (listener != null) {
-                listener.onChunkRemoved(x, z);
-            }
+            clientChunkManagerExt.bobby_onFakeChunkRemoved(x, z);
 
             return true;
         }

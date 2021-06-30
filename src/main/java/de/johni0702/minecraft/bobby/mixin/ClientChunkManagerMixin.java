@@ -3,7 +3,6 @@ package de.johni0702.minecraft.bobby.mixin;
 import de.johni0702.minecraft.bobby.Bobby;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
-import de.johni0702.minecraft.bobby.compat.IChunkStatusListener;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
@@ -48,20 +47,6 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         return bobbyChunkManager;
     }
 
-    @Override
-    public IChunkStatusListener bobby_getListener() {
-        return null;
-    }
-
-    @Override
-    public void bobby_suppressListener() {
-    }
-
-    @Override
-    public IChunkStatusListener bobby_restoreListener() {
-        return null;
-    }
-
     @Inject(method = "getChunk", at = @At("RETURN"), cancellable = true)
     private void bobbyGetChunk(int x, int z, ChunkStatus chunkStatus, boolean orEmpty, CallbackInfoReturnable<WorldChunk> ci) {
         // Did we find a live chunk?
@@ -86,28 +71,9 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             return;
         }
 
-        if (bobbyChunkManager.getChunk(x, z) != null) {
-            // We'll be replacing a fake chunk with a real one.
-            // Suppress the chunk status listener so the chunk mesh does
-            // not get removed before it is re-rendered.
-            bobby_suppressListener();
-        }
-
         // This needs to be called unconditionally because even if there is no chunk loaded at the moment,
         // we might already have one queued which we need to cancel as otherwise it will overwrite the real one later.
         bobbyChunkManager.unload(x, z, true);
-    }
-
-    @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
-    private void bobbyFakeChunkReplaced(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound nbt, BitSet bitSet, CallbackInfoReturnable<WorldChunk> cir) {
-        IChunkStatusListener listener = bobby_restoreListener();
-        if (listener != null) {
-            // However, if we failed to load the chunk from the packet for whatever reason,
-            // we need to notify the listener that the chunk has indeed been unloaded.
-            if (getChunk(x, z, ChunkStatus.FULL, false) == null) {
-                listener.onChunkRemoved(x, z);
-            }
-        }
     }
 
     @Inject(method = "unload", at = @At("HEAD"))
@@ -129,10 +95,6 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             return;
         }
 
-        // We'll be replacing a fake chunk with a real one.
-        // Suppress the chunk status listener so the chunk mesh does
-        // not get removed before it is re-rendered.
-        bobby_suppressListener();
         bobbyChunkReplacement = tag;
     }
 
@@ -148,8 +110,6 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             return;
         }
         bobbyChunkManager.load(chunkX, chunkZ, tag, bobbyChunkManager.getStorage());
-
-        bobby_restoreListener();
     }
 
     @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)
@@ -159,5 +119,15 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         }
 
         cir.setReturnValue(cir.getReturnValue() + " " + bobbyChunkManager.getDebugString());
+    }
+
+    @Override
+    public void bobby_onFakeChunkAdded(int x, int z) {
+        // Vanilla polls for chunks each frame, this is only of interest for Sodium (see SodiumChunkManagerMixin)
+    }
+
+    @Override
+    public void bobby_onFakeChunkRemoved(int x, int z) {
+        // Vanilla polls for chunks each frame, this is only of interest for Sodium (see SodiumChunkManagerMixin)
     }
 }

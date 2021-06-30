@@ -38,7 +38,7 @@
     "modmenu": "^${modMenuVersion}"
   },
   "breaks": {
-    "sodium": "<0.2.0"
+    "sodium": "<0.3.0"
   },
 
   "custom": {
