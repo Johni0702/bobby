@@ -3,7 +3,6 @@ package de.johni0702.minecraft.bobby.mixin;
 import de.johni0702.minecraft.bobby.Bobby;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
-import de.johni0702.minecraft.bobby.IClientChunkManager;
 import de.johni0702.minecraft.bobby.compat.IChunkStatusListener;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.minecraft.client.world.ClientChunkManager;
@@ -26,7 +25,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.BitSet;
 
 @Mixin(ClientChunkManager.class)
-public abstract class ClientChunkManagerMixin implements IClientChunkManager, ClientChunkManagerExt {
+public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
     @Shadow @Final private WorldChunk emptyChunk;
 
     @Shadow @Nullable public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
@@ -45,7 +44,7 @@ public abstract class ClientChunkManagerMixin implements IClientChunkManager, Cl
     }
 
     @Override
-    public FakeChunkManager getBobbyChunkManager() {
+    public FakeChunkManager bobby_getFakeChunkManager() {
         return bobbyChunkManager;
     }
 

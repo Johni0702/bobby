@@ -2,7 +2,7 @@ package de.johni0702.minecraft.bobby.mixin;
 
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
-import de.johni0702.minecraft.bobby.IClientChunkManager;
+import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.option.Option;
@@ -30,7 +30,7 @@ public abstract class MinecraftClientMixin {
         if (world == null) {
             return;
         }
-        FakeChunkManager bobbyChunkManager = ((IClientChunkManager) world.getChunkManager()).getBobbyChunkManager();
+        FakeChunkManager bobbyChunkManager = ((ClientChunkManagerExt) world.getChunkManager()).bobby_getFakeChunkManager();
         if (bobbyChunkManager == null) {
             return;
         }
