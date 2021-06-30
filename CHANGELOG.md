@@ -1,5 +1,6 @@
 ### 2.0.2-SNAPSHOT
 - Support for Sodium 0.3.0
+- Fix nearby fake chunks not loading after server view distance is reduced
 
 ### 2.0.1
 - Fix AIOOB exception due to incorrect Y position of fake chunk sections (#27)

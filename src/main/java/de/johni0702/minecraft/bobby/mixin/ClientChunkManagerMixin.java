@@ -1,27 +1,34 @@
 package de.johni0702.minecraft.bobby.mixin;
 
 import de.johni0702.minecraft.bobby.Bobby;
+import de.johni0702.minecraft.bobby.FakeChunk;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
+import de.johni0702.minecraft.bobby.VisibleChunksTracker;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
+import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 
 @Mixin(ClientChunkManager.class)
 public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
@@ -29,16 +36,22 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
 
     @Shadow @Nullable public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
     @Shadow public abstract LightingProvider getLightingProvider();
+    @Shadow private static int getChunkMapRadius(int loadDistance) { throw new AssertionError(); }
 
     protected FakeChunkManager bobbyChunkManager;
-    // Cache of chunk which was just unloaded so we can immediately
-    // load it again without having to wait for the storage io worker.
-    protected  @Nullable NbtCompound bobbyChunkReplacement;
+
+    // Tracks which real chunks are visible (whether or not the were actually received), so we can
+    // properly unload (i.e. save and replace with fake) them when the server center pos or view distance changes.
+    private final VisibleChunksTracker realChunksTracker = new VisibleChunksTracker();
+
+    // List of real chunks saved just before they are unloaded, so we can restore fake ones in their place afterwards
+    private final List<Pair<Long, NbtCompound>> bobbyChunkReplacements = new ArrayList<>();
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
         if (Bobby.getInstance().isEnabled()) {
             bobbyChunkManager = new FakeChunkManager(world, (ClientChunkManager) (Object) this);
+            realChunksTracker.update(0, 0, getChunkMapRadius(loadDistance), null, null);
         }
     }
 
@@ -76,14 +89,13 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         bobbyChunkManager.unload(x, z, true);
     }
 
-    @Inject(method = "unload", at = @At("HEAD"))
-    private void bobbySaveChunk(int chunkX, int chunkZ, CallbackInfo ci) {
-        if (bobbyChunkManager == null) {
-            return;
-        }
+    @Unique
+    private void saveRealChunk(long chunkPos) {
+        int chunkX = ChunkPos.getPackedX(chunkPos);
+        int chunkZ = ChunkPos.getPackedZ(chunkPos);
 
         WorldChunk chunk = getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
-        if (chunk == null) {
+        if (chunk == null || chunk instanceof FakeChunk) {
             return;
         }
 
@@ -91,25 +103,56 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         NbtCompound tag = storage.serialize(chunk, getLightingProvider());
         storage.save(chunk.getPos(), tag);
 
-        if (!bobbyChunkManager.shouldBeLoaded(chunkX, chunkZ)) {
-            return;
+        if (bobbyChunkManager.shouldBeLoaded(chunkX, chunkZ)) {
+            bobbyChunkReplacements.add(Pair.of(chunkPos, tag));
         }
-
-        bobbyChunkReplacement = tag;
     }
 
-    @Inject(method = "unload", at = @At("RETURN"))
-    private void bobbyReplaceChunk(int chunkX, int chunkZ, CallbackInfo ci) {
+    @Unique
+    private void substituteFakeChunksForUnloadedRealOnes() {
+        for (Pair<Long, NbtCompound> entry : bobbyChunkReplacements) {
+            long chunkPos = entry.getKey();
+            int chunkX = ChunkPos.getPackedX(chunkPos);
+            int chunkZ = ChunkPos.getPackedZ(chunkPos);
+            bobbyChunkManager.load(chunkX, chunkZ, entry.getValue(), bobbyChunkManager.getStorage());
+        }
+        bobbyChunkReplacements.clear();
+    }
+
+    @Inject(method = "unload", at = @At("HEAD"))
+    private void bobbySaveChunk(int chunkX, int chunkZ, CallbackInfo ci) {
         if (bobbyChunkManager == null) {
             return;
         }
 
-        NbtCompound tag = bobbyChunkReplacement;
-        bobbyChunkReplacement = null;
-        if (tag == null) {
+        saveRealChunk(ChunkPos.toLong(chunkX, chunkZ));
+    }
+
+    @Inject(method = "setChunkMapCenter", at = @At("HEAD"))
+    private void bobbySaveChunksBeforeMove(int x, int z, CallbackInfo ci) {
+        if (bobbyChunkManager == null) {
             return;
         }
-        bobbyChunkManager.load(chunkX, chunkZ, tag, bobbyChunkManager.getStorage());
+
+        realChunksTracker.updateCenter(x, z, this::saveRealChunk, null);
+    }
+
+    @Inject(method = "updateLoadDistance", at = @At("HEAD"))
+    private void bobbySaveChunksBeforeResize(int loadDistance, CallbackInfo ci) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
+        realChunksTracker.updateViewDistance(getChunkMapRadius(loadDistance), this::saveRealChunk, null);
+    }
+
+    @Inject(method = { "unload", "setChunkMapCenter", "updateLoadDistance" }, at = @At("RETURN"))
+    private void bobbySubstituteFakeChunksForUnloadedRealOnes(CallbackInfo ci) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
+        substituteFakeChunksForUnloadedRealOnes();
     }
 
     @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)

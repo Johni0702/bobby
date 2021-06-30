@@ -7,6 +7,14 @@ import java.util.function.LongConsumer;
 public class VisibleChunksTracker {
     private int centerX, centerZ, viewDistance;
 
+    public void updateCenter(int centerX, int centerZ, LongConsumer unload, LongConsumer load) {
+        update(centerX, centerZ, viewDistance, unload, load);
+    }
+
+    public void updateViewDistance(int viewDistance, LongConsumer unload, LongConsumer load) {
+        update(centerX, centerZ, viewDistance, unload, load);
+    }
+
     public void update(int newCenterX, int newCenterZ, int newViewDistance, LongConsumer unload, LongConsumer load) {
         int oldCenterX = this.centerX;
         int oldCenterZ = this.centerZ;

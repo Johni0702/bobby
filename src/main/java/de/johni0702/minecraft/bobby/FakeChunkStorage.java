@@ -4,7 +4,6 @@ import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.mixin.LightingProviderAccessor;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.world.DummyClientTickScheduler;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
@@ -23,7 +22,6 @@ import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ColumnChunkNibbleArray;
-import net.minecraft.world.chunk.UpgradeData;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.storage.VersionedChunkStorage;
@@ -255,17 +253,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             skyLight[y] = inferredSection;
         }
 
-        WorldChunk chunk = new WorldChunk(
-                world,
-                pos,
-                biomeArray,
-                UpgradeData.NO_UPGRADE_DATA,
-                DummyClientTickScheduler.get(),
-                DummyClientTickScheduler.get(),
-                0L,
-                chunkSections,
-                null
-        );
+        WorldChunk chunk = new FakeChunk(world, pos, biomeArray, chunkSections);
 
         NbtCompound hightmapsTag = level.getCompound("Heightmaps");
         EnumSet<Heightmap.Type> missingHightmapTypes = EnumSet.noneOf(Heightmap.Type.class);
