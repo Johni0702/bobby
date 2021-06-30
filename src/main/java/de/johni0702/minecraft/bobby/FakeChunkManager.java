@@ -70,7 +70,7 @@ public class FakeChunkManager {
     private int ticksSinceLastSave;
 
     private final Long2ObjectMap<WorldChunk> fakeChunks = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
-    private int centerX, centerZ, viewDistance;
+    private final VisibleChunksTracker chunkTracker = new VisibleChunksTracker();
     private final Long2LongMap toBeUnloaded = new Long2LongOpenHashMap();
     // Contains chunks in order to be unloaded. We keep the chunk and time so we can cross-reference it with
     // [toBeUnloaded] to see if the entry has since been removed / the time reset. This way we do not need
@@ -141,57 +141,34 @@ public class FakeChunkManager {
         BobbyConfig config = Bobby.getInstance().getConfig();
         long time = Util.getMeasuringTimeMs();
 
-        int oldCenterX = this.centerX;
-        int oldCenterZ = this.centerZ;
-        int oldViewDistance = this.viewDistance;
         ChunkPos playerChunkPos = player.getChunkPos();
         int newCenterX =  playerChunkPos.x;
         int newCenterZ = playerChunkPos.z;
         int newViewDistance = client.options.viewDistance;
-        if (oldCenterX != newCenterX || oldCenterZ != newCenterZ || oldViewDistance != newViewDistance) {
-            // Firstly check which chunks can be unloaded / cancelled
-            for (int x = oldCenterX - oldViewDistance; x <= oldCenterX + oldViewDistance; x++) {
-                boolean xOutsideNew = x < newCenterX - newViewDistance || x > newCenterX + newViewDistance;
-                for (int z = oldCenterZ - oldViewDistance; z <= oldCenterZ + oldViewDistance; z++) {
-                    boolean zOutsideNew = z < newCenterZ - newViewDistance || z > newCenterZ + newViewDistance;
-                    if (xOutsideNew || zOutsideNew) {
-                        cancelLoad(x, z);
-                        long chunkPos = ChunkPos.toLong(x, z);
-                        toBeUnloaded.put(chunkPos, time);
-                        unloadQueue.add(new Pair<>(chunkPos, time));
-                    }
-                }
+        chunkTracker.update(newCenterX, newCenterZ, newViewDistance, chunkPos -> {
+            // Chunk is now outside view distance, can be unloaded / cancelled
+            cancelLoad(chunkPos);
+            toBeUnloaded.put(chunkPos, time);
+            unloadQueue.add(new Pair<>(chunkPos, time));
+        }, chunkPos -> {
+            // Chunk is now inside view distance, load it
+            int x = ChunkPos.getPackedX(chunkPos);
+            int z = ChunkPos.getPackedZ(chunkPos);
+
+            // We want this chunk, so don't unload it if it's still here
+            toBeUnloaded.remove(chunkPos);
+            // Not removing it from [unloadQueue], we check [toBeUnloaded] when we poll it.
+
+            // If there already is a chunk loaded, there's nothing to do
+            if (clientChunkManager.getChunk(x, z, ChunkStatus.FULL, false) != null) {
+                return;
             }
 
-            // Then check which one we need to load
-            for (int x = newCenterX - newViewDistance; x <= newCenterX + newViewDistance; x++) {
-                boolean xOutsideOld = x < oldCenterX - oldViewDistance || x > oldCenterX + oldViewDistance;
-                for (int z = newCenterZ - newViewDistance; z <= newCenterZ + newViewDistance; z++) {
-                    boolean zOutsideOld = z < oldCenterZ - oldViewDistance || z > oldCenterZ + oldViewDistance;
-                    if (xOutsideOld || zOutsideOld) {
-                        long chunkPos = ChunkPos.toLong(x, z);
-
-                        // We want this chunk, so don't unload it if it's still here
-                        toBeUnloaded.remove(chunkPos);
-                        // Not removing it from [unloadQueue], we check [toBeUnloaded] when we poll it.
-
-                        // If there already is a chunk loaded, there's nothing to do
-                        if (clientChunkManager.getChunk(x, z, ChunkStatus.FULL, false) != null) {
-                            continue;
-                        }
-
-                        // All good, load it
-                        LoadingJob loadingJob = new LoadingJob(x, z);
-                        loadingJobs.put(chunkPos, loadingJob);
-                        loadExecutor.execute(loadingJob);
-                    }
-                }
-            }
-
-            this.centerX = newCenterX;
-            this.centerZ = newCenterZ;
-            this.viewDistance = newViewDistance;
-        }
+            // All good, load it
+            LoadingJob loadingJob = new LoadingJob(x, z);
+            loadingJobs.put(chunkPos, loadingJob);
+            loadExecutor.execute(loadingJob);
+        });
 
         // Anything remaining in the set is no longer needed and can now be unloaded
         long unloadTime = time - config.getUnloadDelaySecs() * 1000L;
@@ -256,9 +233,7 @@ public class FakeChunkManager {
     }
 
     public boolean shouldBeLoaded(int x, int z) {
-        boolean xInside = x >= centerX - viewDistance && x <= centerX + viewDistance;
-        boolean zInside = z >= centerZ - viewDistance && z <= centerZ + viewDistance;
-        return xInside && zInside;
+        return chunkTracker.isInViewDistance(x, z);
     }
 
     private @Nullable Pair<NbtCompound, FakeChunkStorage> loadTag(int x, int z) {
@@ -302,8 +277,9 @@ public class FakeChunkManager {
     }
 
     public boolean unload(int x, int z, boolean willBeReplaced) {
-        cancelLoad(x, z);
-        WorldChunk chunk = fakeChunks.remove(ChunkPos.toLong(x, z));
+        long chunkPos = ChunkPos.toLong(x, z);
+        cancelLoad(chunkPos);
+        WorldChunk chunk = fakeChunks.remove(chunkPos);
         if (chunk != null) {
             LightingProviderAccessor lightingProvider = (LightingProviderAccessor) clientChunkManager.getLightingProvider();
             ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
@@ -325,8 +301,8 @@ public class FakeChunkManager {
         return false;
     }
 
-    private void cancelLoad(int x, int z) {
-        LoadingJob loadingJob = loadingJobs.remove(ChunkPos.toLong(x, z));
+    private void cancelLoad(long chunkPos) {
+        LoadingJob loadingJob = loadingJobs.remove(chunkPos);
         if (loadingJob != null) {
             loadingJob.cancelled = true;
         }
