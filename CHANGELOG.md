@@ -1,3 +1,5 @@
+### 2.0.2-SNAPSHOT
+
 ### 2.0.1
 - Fix AIOOB exception due to incorrect Y position of fake chunk sections (#27)
 - Fix chunk light not properly unloading in tall worlds (#28)
