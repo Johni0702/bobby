@@ -10,7 +10,8 @@
   ],
   "contact": {
     "homepage": "https://github.com/johni0702/bobby",
-    "sources": "https://github.com/johni0702/bobby"
+    "sources": "https://github.com/johni0702/bobby",
+    "issues": "https://github.com/johni0702/bobby/issues"
   },
 
   "license": "LGPL-3.0-or-later",
