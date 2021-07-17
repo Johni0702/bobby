@@ -1,5 +1,5 @@
 ### 2.0.3
-- Update to Minecraft 1.17
+- Update to Minecraft 1.17.1
 
 ### 2.0.2
 - Support for Sodium 0.3.0
