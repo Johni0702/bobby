@@ -21,7 +21,6 @@ import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.ColumnChunkNibbleArray;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.storage.VersionedChunkStorage;
@@ -248,7 +247,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             // If we are missing a section, infer it from the previous full section (the result of that can be re-used)
             if (inferredSection == null) {
                 assert fullSectionAbove != null; // we only clear the cache when we set this
-                inferredSection = new ChunkNibbleArray((new ColumnChunkNibbleArray(fullSectionAbove, 0)).asByteArray());
+                inferredSection = floodSkylightFromAbove(fullSectionAbove);
             }
             skyLight[y] = inferredSection;
         }
@@ -305,5 +304,21 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
             return chunk;
         };
+    }
+
+    private static ChunkNibbleArray floodSkylightFromAbove(ChunkNibbleArray above) {
+        if (above.isUninitialized()) {
+            return new ChunkNibbleArray();
+        } else {
+            byte[] aboveBytes = above.asByteArray();
+            byte[] belowBytes = new byte[2048];
+
+            // Copy the bottom-most slice from above, 16 time over
+            for (int i = 0; i < 16; i++) {
+                System.arraycopy(aboveBytes, 0, belowBytes, i * 128, 128);
+            }
+
+            return new ChunkNibbleArray(belowBytes);
+        }
     }
 }

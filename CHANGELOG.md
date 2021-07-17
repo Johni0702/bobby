@@ -1,3 +1,6 @@
+### 2.0.3
+- Update to Minecraft 1.17
+
 ### 2.0.2
 - Support for Sodium 0.3.0
 - Fix nearby fake chunks not loading after server view distance is reduced
