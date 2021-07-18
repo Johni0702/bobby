@@ -84,9 +84,16 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             return;
         }
 
+        bobby_pauseChunkStatusListener();
+
         // This needs to be called unconditionally because even if there is no chunk loaded at the moment,
         // we might already have one queued which we need to cancel as otherwise it will overwrite the real one later.
         bobbyChunkManager.unload(x, z, true);
+    }
+
+    @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
+    private void bobbyPostLoadRealChunk(CallbackInfoReturnable<WorldChunk> cir) {
+        bobby_resumeChunkStatusListener();
     }
 
     @Unique
@@ -105,6 +112,8 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
 
         if (bobbyChunkManager.shouldBeLoaded(chunkX, chunkZ)) {
             bobbyChunkReplacements.add(Pair.of(chunkPos, tag));
+
+            bobby_pauseChunkStatusListener();
         }
     }
 
@@ -117,6 +126,8 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             bobbyChunkManager.load(chunkX, chunkZ, entry.getValue(), bobbyChunkManager.getStorage());
         }
         bobbyChunkReplacements.clear();
+
+        bobby_resumeChunkStatusListener();
     }
 
     @Inject(method = "unload", at = @At("HEAD"))
@@ -171,6 +182,16 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
 
     @Override
     public void bobby_onFakeChunkRemoved(int x, int z) {
+        // Vanilla polls for chunks each frame, this is only of interest for Sodium (see SodiumChunkManagerMixin)
+    }
+
+    @Override
+    public void bobby_pauseChunkStatusListener() {
+        // Vanilla polls for chunks each frame, this is only of interest for Sodium (see SodiumChunkManagerMixin)
+    }
+
+    @Override
+    public void bobby_resumeChunkStatusListener() {
         // Vanilla polls for chunks each frame, this is only of interest for Sodium (see SodiumChunkManagerMixin)
     }
 }
