@@ -1,4 +1,5 @@
 # Bobby
+https://www.curseforge.com/minecraft/mc-mods/bobby
 
 Bobby is a Minecraft mod which allows for render distances greater than the server's view-distance setting.
 
