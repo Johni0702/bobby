@@ -1,0 +1,21 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "de.johni0702.minecraft.bobby.mixin",
+  "compatibilityLevel": "JAVA_16",
+  "plugin": "de.johni0702.minecraft.bobby.MixinConfigPlugin",
+  "client": [
+    "BiomeAccessAccessor",
+    "ChunkLightProviderMixin",
+    "ClientChunkManagerMixin",
+    "IntegratedServerMixin",
+    "LightingProviderAccessor",
+    "MinecraftClientMixin",
+    "sodium.SodiumChunkManagerMixin",
+    "sodium.SodiumGameOptionPagesMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "bobby-master-refmap.json"
+}

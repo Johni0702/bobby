@@ -1,0 +1,60 @@
+{
+  "mappings": {
+    "de/johni0702/minecraft/bobby/mixin/ClientChunkManagerMixin": {
+      "getDebugString": "Lnet/minecraft/class_631;method_12122()Ljava/lang/String;",
+      "getChunk": "Lnet/minecraft/class_631;method_2857(IILnet/minecraft/class_2806;Z)Lnet/minecraft/class_2818;",
+      "loadChunkFromPacket": "Lnet/minecraft/class_631;method_16020(IILnet/minecraft/class_4548;Lnet/minecraft/class_2540;Lnet/minecraft/class_2487;Ljava/util/BitSet;)Lnet/minecraft/class_2818;",
+      "unload": "Lnet/minecraft/class_631;method_2859(II)V",
+      "setChunkMapCenter": "Lnet/minecraft/class_631;method_20317(II)V",
+      "updateLoadDistance": "Lnet/minecraft/class_631;method_20180(I)V"
+    },
+    "de/johni0702/minecraft/bobby/mixin/LightingProviderAccessor": {
+      "blockLightProvider": "field_15814:Lnet/minecraft/class_3558;",
+      "skyLightProvider": "field_15813:Lnet/minecraft/class_3558;"
+    },
+    "de/johni0702/minecraft/bobby/mixin/IntegratedServerMixin": {
+      "tick": "Lnet/minecraft/class_1132;method_3748(Ljava/util/function/BooleanSupplier;)V"
+    },
+    "de/johni0702/minecraft/bobby/mixin/MinecraftClientMixin": {
+      "render": "Lnet/minecraft/class_310;method_1523(Z)V",
+      "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V": "Lnet/minecraft/class_310;method_18096(Lnet/minecraft/class_437;)V"
+    },
+    "de/johni0702/minecraft/bobby/mixin/ChunkLightProviderMixin": {
+      "getLightLevel": "Lnet/minecraft/class_3558;method_15543(Lnet/minecraft/class_2338;)I",
+      "getLightSection": "Lnet/minecraft/class_3558;method_15544(Lnet/minecraft/class_4076;)Lnet/minecraft/class_2804;"
+    },
+    "de/johni0702/minecraft/bobby/mixin/BiomeAccessAccessor": {
+      "seed": "field_20641:J"
+    }
+  },
+  "data": {
+    "named:intermediary": {
+      "de/johni0702/minecraft/bobby/mixin/ClientChunkManagerMixin": {
+        "getDebugString": "Lnet/minecraft/class_631;method_12122()Ljava/lang/String;",
+        "getChunk": "Lnet/minecraft/class_631;method_2857(IILnet/minecraft/class_2806;Z)Lnet/minecraft/class_2818;",
+        "loadChunkFromPacket": "Lnet/minecraft/class_631;method_16020(IILnet/minecraft/class_4548;Lnet/minecraft/class_2540;Lnet/minecraft/class_2487;Ljava/util/BitSet;)Lnet/minecraft/class_2818;",
+        "unload": "Lnet/minecraft/class_631;method_2859(II)V",
+        "setChunkMapCenter": "Lnet/minecraft/class_631;method_20317(II)V",
+        "updateLoadDistance": "Lnet/minecraft/class_631;method_20180(I)V"
+      },
+      "de/johni0702/minecraft/bobby/mixin/LightingProviderAccessor": {
+        "blockLightProvider": "field_15814:Lnet/minecraft/class_3558;",
+        "skyLightProvider": "field_15813:Lnet/minecraft/class_3558;"
+      },
+      "de/johni0702/minecraft/bobby/mixin/IntegratedServerMixin": {
+        "tick": "Lnet/minecraft/class_1132;method_3748(Ljava/util/function/BooleanSupplier;)V"
+      },
+      "de/johni0702/minecraft/bobby/mixin/MinecraftClientMixin": {
+        "render": "Lnet/minecraft/class_310;method_1523(Z)V",
+        "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V": "Lnet/minecraft/class_310;method_18096(Lnet/minecraft/class_437;)V"
+      },
+      "de/johni0702/minecraft/bobby/mixin/ChunkLightProviderMixin": {
+        "getLightLevel": "Lnet/minecraft/class_3558;method_15543(Lnet/minecraft/class_2338;)I",
+        "getLightSection": "Lnet/minecraft/class_3558;method_15544(Lnet/minecraft/class_4076;)Lnet/minecraft/class_2804;"
+      },
+      "de/johni0702/minecraft/bobby/mixin/BiomeAccessAccessor": {
+        "seed": "field_20641:J"
+      }
+    }
+  }
+}
