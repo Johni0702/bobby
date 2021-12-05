@@ -231,6 +231,20 @@ public class FakeChunkManager {
         }
     }
 
+    public void loadMissingChunksFromCache() {
+        // We do this by temporarily reducing the client view distance to 0. That will unload all chunks and then try
+        // to re-load them (by canceling the unload when they were already loaded, or from the cache when they are
+        // missing).
+        int orgViewDistance = client.options.viewDistance;
+        client.options.viewDistance = 0;
+        try {
+            update(() -> false);
+        } finally {
+            client.options.viewDistance = orgViewDistance;
+        }
+        update(() -> false);
+    }
+
     public boolean shouldBeLoaded(int x, int z) {
         return chunkTracker.isInViewDistance(x, z);
     }

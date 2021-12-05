@@ -1,5 +1,6 @@
 ### 3.0.0-SNAPSHOT
 - Update to Minecraft 1.18
+- Add `/bobby upgrade` to upgrade all chunks in cache to the current Minecraft version
 
 ### 2.0.4
 - Fix chunk flicker with Sodium 0.3.0 (broke shortly before release)

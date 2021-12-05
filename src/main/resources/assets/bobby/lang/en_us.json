@@ -1,4 +1,10 @@
 {
+  "bobby.upgrade.required": "[Bobby] This world contains data from an old version of Minecraft. Run `/bobby upgrade` to upgrade it.",
+  "bobby.upgrade.not_enabled": "Bobby is not enabled for this world.",
+  "bobby.upgrade.begin": "[Bobby] Upgrading world data to current Minecraft version. This may take a few minutes.",
+  "bobby.upgrade.progress": "[Bobby] Upgraded %d of (estimated) %d chunks.",
+  "bobby.upgrade.done": "[Bobby] World data upgrade complete. Your old chunks should now be visible again.",
+
   "title.bobby.config": "Bobby Config",
   "option.bobby.enabled": "Enabled",
   "option.bobby.no_block_entities": "Disable Block Entites",
