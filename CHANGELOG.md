@@ -1,3 +1,6 @@
+### 3.0.0-SNAPSHOT
+- Update to Minecraft 1.18
+
 ### 2.0.4
 - Fix chunk flicker with Sodium 0.3.0 (broke shortly before release)
 

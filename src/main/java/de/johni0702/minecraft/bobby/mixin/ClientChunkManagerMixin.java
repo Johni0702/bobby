@@ -10,8 +10,8 @@ import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.network.PacketByteBuf;
+import net.minecraft.network.packet.s2c.play.ChunkData;
 import net.minecraft.util.math.ChunkPos;
-import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
@@ -27,8 +27,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
+import java.util.function.Consumer;
 
 @Mixin(ClientChunkManager.class)
 public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
@@ -60,7 +60,7 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         return bobbyChunkManager;
     }
 
-    @Inject(method = "getChunk", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/WorldChunk;", at = @At("RETURN"), cancellable = true)
     private void bobbyGetChunk(int x, int z, ChunkStatus chunkStatus, boolean orEmpty, CallbackInfoReturnable<WorldChunk> ci) {
         // Did we find a live chunk?
         if (ci.getReturnValue() != (orEmpty ? emptyChunk : null)) {
@@ -79,7 +79,7 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
     }
 
     @Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
-    private void bobbyUnloadFakeChunk(int x, int z, BiomeArray biomes, PacketByteBuf buf, NbtCompound nbt, BitSet bitSet, CallbackInfoReturnable<WorldChunk> cir) {
+    private void bobbyUnloadFakeChunk(int x, int z, PacketByteBuf buf, NbtCompound nbt, Consumer<ChunkData.BlockEntityVisitor> consumer, CallbackInfoReturnable<WorldChunk> cir) {
         if (bobbyChunkManager == null) {
             return;
         }

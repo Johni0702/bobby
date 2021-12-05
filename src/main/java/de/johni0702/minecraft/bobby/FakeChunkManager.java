@@ -45,7 +45,6 @@ import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.level.storage.LevelStorage;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -100,15 +99,15 @@ public class FakeChunkManager {
                 .resolve(worldId.getNamespace())
                 .resolve(worldId.getPath());
 
-        storage = FakeChunkStorage.getFor(storagePath.toFile(), null);
+        storage = FakeChunkStorage.getFor(storagePath);
 
         FakeChunkStorage fallbackStorage = null;
         LevelStorage levelStorage = client.getLevelStorage();
         if (levelStorage.levelExists(FALLBACK_LEVEL_NAME)) {
             try (LevelStorage.Session session = levelStorage.createSession(FALLBACK_LEVEL_NAME)) {
-                File worldDirectory = session.getWorldDirectory(worldKey);
-                File regionDirectory = new File(worldDirectory, "region");
-                fallbackStorage = FakeChunkStorage.getFor(regionDirectory, getBiomeSource(session));
+                Path worldDirectory = session.getWorldDirectory(worldKey);
+                Path regionDirectory = worldDirectory.resolve("region");
+                fallbackStorage = FakeChunkStorage.getFor(regionDirectory);
             } catch (Exception e) {
                 e.printStackTrace();
             }

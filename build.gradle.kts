@@ -18,11 +18,16 @@ val modMenuVersion: String by project
 dependencies {
 	val yarnMappings: String by project
 	val loaderVersion: String by project
+	val fabricApiVersion: String by project
 	val sodiumVersion: String by project
 	val confabricateVersion: String by project
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings("net.fabricmc:yarn:${yarnMappings}:v2")
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
+
+	// we don't need the full thing but our deps pull in an outdated one
+	modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
+
 	modCompileOnly("com.github.jellysquid3:sodium-fabric:$sodiumVersion")
 	modImplementation(include("ca.stellardrift:confabricate:$confabricateVersion")!!)
 	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")
@@ -45,8 +50,8 @@ tasks.processResources {
 
 tasks.withType<JavaCompile> {
 	options.encoding = "UTF-8"
-	sourceCompatibility = "1.8"
-	targetCompatibility = "1.8"
+	sourceCompatibility = "17"
+	targetCompatibility = "17"
 }
 
 tasks.withType<AbstractArchiveTask> {
@@ -118,7 +123,7 @@ curseforge {
 		})
 		addGameVersion("Fabric")
 		addGameVersion(minecraftVersion)
-		addGameVersion("Java 16")
+		addGameVersion("Java 17")
 	})
 	options(closureOf<com.matthewprenger.cursegradle.Options> {
 		javaVersionAutoDetect = false
