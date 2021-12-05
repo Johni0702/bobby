@@ -28,7 +28,7 @@ dependencies {
 	// we don't need the full thing but our deps pull in an outdated one
 	modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
 
-	modCompileOnly("com.github.jellysquid3:sodium-fabric:$sodiumVersion")
+	modCompileOnly("com.github.caffeinemc:sodium-fabric:$sodiumVersion")
 	modImplementation(include("ca.stellardrift:confabricate:$confabricateVersion")!!)
 	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")
 	modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
@@ -72,11 +72,6 @@ publishing {
 }
 
 repositories {
-	maven("https://jitpack.io") {
-		content {
-			includeGroup("com.github.jellysquid3")
-		}
-	}
 	maven("https://maven.shedaniel.me") {
 		content {
 			includeGroup("me.shedaniel.cloth")
@@ -86,6 +81,12 @@ repositories {
 		content {
 			includeGroup("com.terraformersmc")
 		}
+	}
+	ivy {
+		setUrl("https://github.com/CaffeineMC/")
+		patternLayout { artifact("[artifact]/releases/download/[revision]/[artifact]-[revision](+[classifier])(.[ext])") }
+		metadataSources { artifact() }
+		content { includeGroup("com.github.caffeinemc") }
 	}
 }
 

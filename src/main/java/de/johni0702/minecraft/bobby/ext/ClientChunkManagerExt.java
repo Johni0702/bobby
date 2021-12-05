@@ -1,7 +1,7 @@
 package de.johni0702.minecraft.bobby.ext;
 
 import de.johni0702.minecraft.bobby.FakeChunkManager;
-import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
+import de.johni0702.minecraft.bobby.sodium.ChunkStatusListener;
 
 public interface ClientChunkManagerExt {
     FakeChunkManager bobby_getFakeChunkManager();

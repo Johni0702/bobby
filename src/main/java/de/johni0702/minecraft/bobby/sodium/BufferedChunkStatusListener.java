@@ -2,7 +2,6 @@ package de.johni0702.minecraft.bobby.sodium;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import me.jellysquid.mods.sodium.client.world.ChunkStatusListener;
 import net.minecraft.util.math.ChunkPos;
 
 public class BufferedChunkStatusListener implements ChunkStatusListener {

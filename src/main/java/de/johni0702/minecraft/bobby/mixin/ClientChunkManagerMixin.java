@@ -92,7 +92,12 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
     }
 
     @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
-    private void bobbyPostLoadRealChunk(CallbackInfoReturnable<WorldChunk> cir) {
+    private void bobbyPostLoadRealChunk(int x, int z, PacketByteBuf buf, NbtCompound nbt, Consumer<ChunkData.BlockEntityVisitor> consumer, CallbackInfoReturnable<WorldChunk> cir) {
+        // Sodium moved this into the ClientPlayNetworkHandler, but I'd rather not move all our stuff there.
+        // It looks like it's supposed to be idempotent (and ran even when the chunk fails to parse), so we'll just call
+        // it here as well and thereby cancel out the above unload.
+        bobby_onFakeChunkAdded(x, z);
+
         bobby_resumeChunkStatusListener();
     }
 
