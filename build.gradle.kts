@@ -1,5 +1,5 @@
 plugins {
-	id("fabric-loom") version "0.8-SNAPSHOT"
+	id("fabric-loom") version "0.10-SNAPSHOT"
 	id("maven-publish")
 	id("com.github.breadmoirai.github-release") version "2.2.12"
 	id("com.matthewprenger.cursegradle") version "1.4.0"
@@ -61,9 +61,7 @@ tasks.jar {
 publishing {
 	publications {
 		create("mavenJava", MavenPublication::class.java) {
-			artifact(tasks.remapJar) {
-				builtBy(tasks.remapJar)
-			}
+			from(components["java"])
 		}
 	}
 }
