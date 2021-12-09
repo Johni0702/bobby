@@ -1,4 +1,4 @@
-### 3.0.0-SNAPSHOT
+### 3.0.0
 - Update to Minecraft 1.18
 - Add `/bobby upgrade` to upgrade all chunks in cache to the current Minecraft version
 
