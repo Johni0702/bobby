@@ -3,7 +3,6 @@ package de.johni0702.minecraft.bobby;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
-import de.johni0702.minecraft.bobby.mixin.LightingProviderAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
@@ -37,11 +36,13 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.util.thread.ReentrantThreadExecutor;
+import net.minecraft.world.LightType;
 import net.minecraft.world.SaveProperties;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.storage.LevelStorage;
 import org.jetbrains.annotations.Nullable;
 
@@ -294,9 +295,9 @@ public class FakeChunkManager {
         cancelLoad(chunkPos);
         WorldChunk chunk = fakeChunks.remove(chunkPos);
         if (chunk != null) {
-            LightingProviderAccessor lightingProvider = (LightingProviderAccessor) clientChunkManager.getLightingProvider();
-            ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
-            ChunkLightProviderExt skyLightProvider = (ChunkLightProviderExt) lightingProvider.getSkyLightProvider();
+            LightingProvider lightingProvider = clientChunkManager.getLightingProvider();
+            ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
+            ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
             for (int i = 0; i < chunk.getSectionArray().length; i++) {
                 int y = world.sectionIndexToCoord(i);
                 if (blockLightProvider != null) {

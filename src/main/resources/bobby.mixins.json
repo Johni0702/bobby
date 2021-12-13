@@ -10,7 +10,6 @@
     "ClientChunkManagerMixin",
     "GameOptionsMixin",
     "IntegratedServerMixin",
-    "LightingProviderAccessor",
     "MinecraftClientMixin",
     "sodium.SodiumChunkManagerMixin",
     "sodium.SodiumClientPlayNetworkHandlerMixin",

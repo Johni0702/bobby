@@ -1,6 +1,7 @@
 ### 3.0.1-SNAPSHOT
 - Allow for render distances greater than 32 chunks even without Sodium (#61)
 - Fix render distance reverting to 32 in 1.18.1 (#61)
+- Fix black chunks with Starlight installed (#18)
 
 ### 3.0.0
 - Update to Minecraft 1.18

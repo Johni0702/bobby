@@ -20,6 +20,7 @@ dependencies {
 	val loaderVersion: String by project
 	val fabricApiVersion: String by project
 	val sodiumVersion: String by project
+	val starlightVersion: String by project
 	val confabricateVersion: String by project
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings("net.fabricmc:yarn:${yarnMappings}:v2")
@@ -32,6 +33,7 @@ dependencies {
 	modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
 
 	modCompileOnly("com.github.caffeinemc:sodium-fabric:$sodiumVersion")
+	modCompileOnly("com.modrinth.starlight:starlight:$starlightVersion")
 	modImplementation(include("ca.stellardrift:confabricate:$confabricateVersion")!!)
 	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")
 	modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
@@ -90,6 +92,12 @@ repositories {
 		patternLayout { artifact("[artifact]/releases/download/[revision]/[artifact]-[revision](+[classifier])(.[ext])") }
 		metadataSources { artifact() }
 		content { includeGroup("com.github.caffeinemc") }
+	}
+	ivy {
+		setUrl("https://cdn.modrinth.com/data/H8CaAYZC/versions/")
+		patternLayout { artifact("Starlight [revision] 1.18.x/[artifact]-[revision](+[classifier])(.[ext])") }
+		metadataSources { artifact() }
+		content { includeGroup("com.modrinth.starlight") }
 	}
 }
 

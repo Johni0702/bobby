@@ -2,7 +2,6 @@ package de.johni0702.minecraft.bobby;
 
 import com.mojang.serialization.Codec;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
-import de.johni0702.minecraft.bobby.mixin.LightingProviderAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.Block;
@@ -335,9 +334,9 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         return () -> {
             boolean hasSkyLight = world.getDimension().hasSkyLight();
             ChunkManager chunkManager = world.getChunkManager();
-            LightingProviderAccessor lightingProvider = (LightingProviderAccessor) chunkManager.getLightingProvider();
-            ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
-            ChunkLightProviderExt skyLightProvider = (ChunkLightProviderExt) lightingProvider.getSkyLightProvider();
+            LightingProvider lightingProvider = chunkManager.getLightingProvider();
+            ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
+            ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
 
             for (int i = -1; i < chunkSections.length + 1; i++) {
                 int y = world.sectionIndexToCoord(i);
