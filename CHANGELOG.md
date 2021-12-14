@@ -1,5 +1,6 @@
 ### 3.1.0-SNAPSHOT
 - Add option to automatically clean up unused cache after X days (#25)
+- Add option to taint fake chunks, so you can tell the difference from real ones (#41)
 
 ### 3.0.1
 - Allow for render distances greater than 32 chunks even without Sodium (#61)

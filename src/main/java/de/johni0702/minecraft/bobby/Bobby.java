@@ -4,13 +4,16 @@ import ca.stellardrift.confabricate.Confabricate;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import de.johni0702.minecraft.bobby.commands.UpgradeCommand;
+import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v1.ClientCommandManager;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Util;
+import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.configurate.CommentedConfigurationNode;
@@ -55,6 +58,8 @@ public class Bobby implements ClientModInitializer {
         ClientCommandManager.DISPATCHER.register(literal("bobby")
                 .then(literal("upgrade").executes(new UpgradeCommand()))
         );
+
+        configReference.subscribe(new TaintChunksConfigHandler()::update);
 
         Util.getIoWorkerExecutor().submit(this::cleanupOldWorlds);
     }
@@ -127,5 +132,34 @@ public class Bobby implements ClientModInitializer {
         }
         Files.delete(parent);
         deleteParentsIfEmpty(parent);
+    }
+
+    private class TaintChunksConfigHandler {
+        private boolean wasEnabled = getConfig().isTaintFakeChunks();
+
+        public void update(BobbyConfig config) {
+            client.submit(() -> setEnabled(config.isTaintFakeChunks()));
+        }
+
+        private void setEnabled(boolean enabled) {
+            if (wasEnabled == enabled) {
+                return;
+            }
+            wasEnabled = enabled;
+
+            ClientWorld world = client.world;
+            if (world == null) {
+                return;
+            }
+
+            FakeChunkManager bobbyChunkManager = ((ClientChunkManagerExt) world.getChunkManager()).bobby_getFakeChunkManager();
+            if (bobbyChunkManager == null) {
+                return;
+            }
+
+            for (WorldChunk fakeChunk : bobbyChunkManager.getFakeChunks()) {
+                ((FakeChunk) fakeChunk).setTainted(enabled);
+            }
+        }
     }
 }

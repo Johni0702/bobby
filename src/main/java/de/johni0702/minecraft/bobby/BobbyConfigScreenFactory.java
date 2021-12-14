@@ -33,6 +33,12 @@ public class BobbyConfigScreenFactory {
                 .setDefaultValue(defaultConfig.isNoBlockEntities())
                 .build();
 
+        BooleanListEntry taintFakeChunks = entryBuilder
+                .startBooleanToggle(new TranslatableText("option.bobby.taint_fake_chunks"), config.isTaintFakeChunks())
+                .setTooltip(new TranslatableText("tooltip.option.bobby.taint_fake_chunks"))
+                .setDefaultValue(defaultConfig.isTaintFakeChunks())
+                .build();
+
         IntegerListEntry unloadDelaySecs = entryBuilder
                 .startIntField(new TranslatableText("option.bobby.unload_delay"), config.getUnloadDelaySecs())
                 .setTooltip(new TranslatableText("tooltip.option.bobby.unload_delay"))
@@ -60,6 +66,7 @@ public class BobbyConfigScreenFactory {
         ConfigCategory general = builder.getOrCreateCategory(new TranslatableText("category.bobby.general"));
         general.addEntry(enabled);
         general.addEntry(noBlockEntities);
+        general.addEntry(taintFakeChunks);
         general.addEntry(unloadDelaySecs);
         general.addEntry(deleteUnusedRegionsAfterDays);
         general.addEntry(maxRenderDistance);
@@ -68,6 +75,7 @@ public class BobbyConfigScreenFactory {
         builder.setSavingRunnable(() -> update.accept(new BobbyConfig(
                 enabled.getValue(),
                 noBlockEntities.getValue(),
+                taintFakeChunks.getValue(),
                 unloadDelaySecs.getValue(),
                 deleteUnusedRegionsAfterDays.getValue(),
                 maxRenderDistance.getValue(),

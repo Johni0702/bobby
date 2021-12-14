@@ -19,15 +19,50 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 })
 public abstract class ChunkLightProviderMixin implements ChunkLightProviderExt {
     private final Long2ObjectMap<ChunkNibbleArray> bobbySectionData = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
+    private final Long2ObjectMap<ChunkNibbleArray> bobbyOriginalSectionData = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
 
     @Override
     public void bobby_addSectionData(long pos, ChunkNibbleArray data) {
         this.bobbySectionData.put(pos, data);
+        this.bobbyOriginalSectionData.remove(pos);
     }
 
     @Override
     public void bobby_removeSectionData(long pos) {
         this.bobbySectionData.remove(pos);
+        this.bobbyOriginalSectionData.remove(pos);
+    }
+
+    @Override
+    public void bobby_setTainted(long pos, int delta) {
+        if (delta != 0) {
+            ChunkNibbleArray original = this.bobbyOriginalSectionData.get(pos);
+            if (original == null) {
+                original = this.bobbySectionData.get(pos);
+                if (original == null) {
+                    return;
+                }
+                this.bobbyOriginalSectionData.put(pos, original);
+            }
+
+            ChunkNibbleArray updated = new ChunkNibbleArray();
+
+            for (int y = 0; y < 16; y++) {
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        updated.set(x, y, z, Math.min(Math.max(original.get(x, y, z) + delta, 0), 15));
+                    }
+                }
+            }
+
+            this.bobbySectionData.put(pos, updated);
+        } else {
+            ChunkNibbleArray original = this.bobbyOriginalSectionData.remove(pos);
+            if (original == null) {
+                return;
+            }
+            bobbySectionData.put(pos, original);
+        }
     }
 
     @Inject(method = "getLightSection(Lnet/minecraft/util/math/ChunkSectionPos;)Lnet/minecraft/world/chunk/ChunkNibbleArray;", at = @At("HEAD"), cancellable = true)

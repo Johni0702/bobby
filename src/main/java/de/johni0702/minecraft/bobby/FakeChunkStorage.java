@@ -349,7 +349,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             skyLight[y] = inferredSection;
         }
 
-        WorldChunk chunk = new FakeChunk(world, pos, chunkSections);
+        FakeChunk chunk = new FakeChunk(world, pos, chunkSections);
 
         NbtCompound hightmapsTag = level.getCompound("Heightmaps");
         EnumSet<Heightmap.Type> missingHightmapTypes = EnumSet.noneOf(Heightmap.Type.class);
@@ -388,6 +388,8 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                     skyLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), skyLight[i + 1]);
                 }
             }
+
+            chunk.setTainted(config.isTaintFakeChunks());
 
             // MC lazily loads block entities when they are first accessed.
             // It does so in a thread-unsafe way though, so if they are first accessed from e.g. a render thread, this

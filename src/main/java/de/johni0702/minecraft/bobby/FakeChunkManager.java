@@ -49,6 +49,7 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -386,6 +387,10 @@ public class FakeChunkManager {
 
     public String getDebugString() {
         return "F: " + fakeChunks.size() + " L: " + loadingJobs.size() + " U: " + toBeUnloaded.size();
+    }
+
+    public Collection<WorldChunk> getFakeChunks() {
+        return fakeChunks.values();
     }
 
     private class LoadingJob implements Runnable {

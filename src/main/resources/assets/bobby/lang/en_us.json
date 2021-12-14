@@ -9,6 +9,8 @@
   "option.bobby.enabled": "Enabled",
   "option.bobby.no_block_entities": "Disable Block Entites",
   "tooltip.option.bobby.no_block_entities": "Do not load block entities (e.g. chests) in fake chunks.\nThese need updating every tick which can add up.\n\nEnabled by default because the render distance for block entities is usually smaller than the server-view distance anyway.",
+  "option.bobby.taint_fake_chunks": "Taint Fake Chunks",
+  "tooltip.option.bobby.taint_fake_chunks": "Reduces the light levels in fake chunks so you can tell the difference from real ones.",
   "option.bobby.unload_delay": "Chunk Unload Delay (Seconds)",
   "tooltip.option.bobby.unload_delay": "Delays the unloading of chunks which are outside your view distance.\nSaves you from having to reload all chunks when\nleaving an area for a short moment (e.g. cut scenes).\nDoes not work across dimensions.",
   "option.bobby.delete_unused_regions_after_days": "Cleanup Unused Regions (Days)",
