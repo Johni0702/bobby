@@ -5,6 +5,7 @@ import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import de.johni0702.minecraft.bobby.commands.UpgradeCommand;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
+import de.johni0702.minecraft.bobby.util.FlawlessFrames;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v1.ClientCommandManager;
 import net.fabricmc.loader.api.FabricLoader;
@@ -58,6 +59,8 @@ public class Bobby implements ClientModInitializer {
         ClientCommandManager.DISPATCHER.register(literal("bobby")
                 .then(literal("upgrade").executes(new UpgradeCommand()))
         );
+
+        FlawlessFrames.onClientInitialization();
 
         configReference.subscribe(new TaintChunksConfigHandler()::update);
 

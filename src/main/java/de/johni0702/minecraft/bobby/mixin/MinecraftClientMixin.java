@@ -42,7 +42,7 @@ public abstract class MinecraftClientMixin {
         // Arbitrarily choosing 1/4 of frame time as our max budget, that way we're hopefully not noticeable.
         long frameBudget = frameTime / 4;
         long timeLimit = Util.getMeasuringTimeNano() + frameBudget;
-        bobbyChunkManager.update(() -> Util.getMeasuringTimeNano() < timeLimit);
+        bobbyChunkManager.update(false, () -> Util.getMeasuringTimeNano() < timeLimit);
 
         profiler.pop();
     }

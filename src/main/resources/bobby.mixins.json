@@ -9,6 +9,7 @@
     "ChunkLightProviderMixin",
     "ClientChunkManagerMixin",
     "GameOptionsMixin",
+    "GameRendererMixin",
     "IntegratedServerMixin",
     "MinecraftClientMixin",
     "sodium.SodiumChunkManagerMixin",

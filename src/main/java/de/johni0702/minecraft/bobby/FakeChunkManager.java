@@ -125,7 +125,7 @@ public class FakeChunkManager {
         return storage;
     }
 
-    public void update(BooleanSupplier shouldKeepTicking) {
+    public void update(boolean blocking, BooleanSupplier shouldKeepTicking) {
         // Once a minute, force chunks to disk
         if (++ticksSinceLastSave > 20 * 60) {
             // completeAll is blocking, so we run it on the io pool
@@ -212,12 +212,24 @@ public class FakeChunkManager {
         }
 
         ObjectIterator<LoadingJob> loadingJobsIter = this.loadingJobs.values().iterator();
-        while (loadingJobsIter.hasNext()) {
+        jobs: while (loadingJobsIter.hasNext()) {
             LoadingJob loadingJob = loadingJobsIter.next();
 
             //noinspection OptionalAssignedToNull
-            if (loadingJob.result == null) {
-                continue; // still loading
+            while (loadingJob.result == null) {
+                // Still loading, should we wait for it?
+                if (blocking) {
+                    try {
+                        // This code path is not the default one, it doesn't need super high performance, and having the
+                        // workers notify the main thread just for it is probably not worth it.
+                        //noinspection BusyWait
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    continue jobs;
+                }
             }
 
             // Done loading
@@ -240,11 +252,11 @@ public class FakeChunkManager {
         int orgViewDistance = client.options.viewDistance;
         client.options.viewDistance = 0;
         try {
-            update(() -> false);
+            update(false, () -> false);
         } finally {
             client.options.viewDistance = orgViewDistance;
         }
-        update(() -> false);
+        update(false, () -> false);
     }
 
     public boolean shouldBeLoaded(int x, int z) {
