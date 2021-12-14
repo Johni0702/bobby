@@ -329,13 +329,14 @@ public class FakeChunkManager {
             return integratedServer.getSaveProperties().getLevelName();
         }
 
+        // Needs to be before the ServerInfo because that one will contain a random IP
+        if (client.isConnectedToRealms()) {
+            return "realms";
+        }
+
         ServerInfo serverInfo = client.getCurrentServerEntry();
         if (serverInfo != null) {
             return serverInfo.address.replace(':', '_');
-        }
-
-        if (client.isConnectedToRealms()) {
-            return "realms";
         }
 
         return "unknown";
