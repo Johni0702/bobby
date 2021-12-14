@@ -1,3 +1,5 @@
+### 3.1.0-SNAPSHOT
+
 ### 3.0.1
 - Allow for render distances greater than 32 chunks even without Sodium (#61)
 - Fix render distance reverting to 32 in 1.18.1 (#61)
