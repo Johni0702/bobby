@@ -1,4 +1,5 @@
 ### 3.1.0-SNAPSHOT
+- Add option to automatically clean up unused cache after X days (#25)
 
 ### 3.0.1
 - Allow for render distances greater than 32 chunks even without Sodium (#61)

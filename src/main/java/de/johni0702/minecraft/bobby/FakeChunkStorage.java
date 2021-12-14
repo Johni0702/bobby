@@ -65,6 +65,9 @@ import java.util.stream.Stream;
 public class FakeChunkStorage extends VersionedChunkStorage {
     private static final Logger LOGGER = LogManager.getLogger();
     private static final Map<Path, FakeChunkStorage> active = new HashMap<>();
+
+    public static final Pattern REGION_FILE_PATTERN = Pattern.compile("^r\\.(-?[0-9]+)\\.(-?[0-9]+)\\.mca$");
+
     private static final ChunkNibbleArray COMPLETELY_DARK = new ChunkNibbleArray();
     private static final ChunkNibbleArray COMPLETELY_LIT = new ChunkNibbleArray();
     static {
@@ -83,11 +86,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             Blocks.AIR.getDefaultState()
     );
 
-    public static FakeChunkStorage getFor(Path directory) {
+    public static FakeChunkStorage getFor(Path directory, boolean cleanupOnClose) {
         if (!MinecraftClient.getInstance().isOnThread()) {
             throw new IllegalStateException("Must be called from main thread.");
         }
-        return active.computeIfAbsent(directory, f -> new FakeChunkStorage(directory));
+        return active.computeIfAbsent(directory, f -> new FakeChunkStorage(directory, cleanupOnClose));
     }
 
     public static void closeAll() {
@@ -103,19 +106,57 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
     private final Path directory;
     private final AtomicBoolean sentUpgradeNotification = new AtomicBoolean();
+    @Nullable
+    private final LastAccessFile lastAccess;
 
-    private FakeChunkStorage(Path directory) {
+    private FakeChunkStorage(Path directory, boolean cleanupOnClose) {
         super(directory, MinecraftClient.getInstance().getDataFixer(), false);
 
         this.directory = directory;
+
+        LastAccessFile lastAccess = null;
+        if (cleanupOnClose) {
+            try {
+                Files.createDirectories(directory);
+
+                lastAccess = new LastAccessFile(directory);
+            } catch (IOException e) {
+                LOGGER.error("Failed to read last_access file:", e);
+            }
+        }
+        this.lastAccess = lastAccess;
+    }
+
+    @Override
+    public void close() throws IOException {
+        super.close();
+
+        if (lastAccess != null) {
+            int deleteUnusedRegionsAfterDays = Bobby.getInstance().getConfig().getDeleteUnusedRegionsAfterDays();
+            if (deleteUnusedRegionsAfterDays >= 0) {
+                for (long entry : lastAccess.pollRegionsOlderThan(deleteUnusedRegionsAfterDays)) {
+                    int x = ChunkPos.getPackedX(entry);
+                    int z = ChunkPos.getPackedZ(entry);
+                    Files.deleteIfExists(directory.resolve("r." + x + "." + z + ".mca"));
+                }
+            }
+
+            lastAccess.close();
+        }
     }
 
     public void save(ChunkPos pos, NbtCompound chunk) {
+        if (lastAccess != null) {
+            lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
+        }
         setNbt(pos, chunk);
     }
 
     public @Nullable NbtCompound loadTag(ChunkPos pos) throws IOException {
         NbtCompound nbt = getNbt(pos);
+        if (nbt != null && lastAccess != null) {
+            lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
+        }
         if (nbt != null && nbt.getInt("DataVersion") != SharedConstants.getGameVersion().getSaveVersion().getId()) {
             if (sentUpgradeNotification.compareAndSet(false, true)) {
                 MinecraftClient client = MinecraftClient.getInstance();
@@ -389,7 +430,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             chunks = stream
                     .map(Path::getFileName)
                     .map(Path::toString)
-                    .map(Pattern.compile("^r\\.(-?[0-9]+)\\.(-?[0-9]+)\\.mca$")::matcher)
+                    .map(REGION_FILE_PATTERN::matcher)
                     .filter(Matcher::matches)
                     .map(it -> new RegionPos(Integer.parseInt(it.group(1)), Integer.parseInt(it.group(2))))
                     .flatMap(RegionPos::getContainedChunks)

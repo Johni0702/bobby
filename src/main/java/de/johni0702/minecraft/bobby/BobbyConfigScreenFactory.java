@@ -39,6 +39,12 @@ public class BobbyConfigScreenFactory {
                 .setDefaultValue(defaultConfig.getUnloadDelaySecs())
                 .build();
 
+        IntegerListEntry deleteUnusedRegionsAfterDays = entryBuilder
+                .startIntField(new TranslatableText("option.bobby.delete_unused_regions_after_days"), config.getDeleteUnusedRegionsAfterDays())
+                .setTooltip(new TranslatableText("tooltip.option.bobby.delete_unused_regions_after_days"))
+                .setDefaultValue(defaultConfig.getDeleteUnusedRegionsAfterDays())
+                .build();
+
         IntegerListEntry maxRenderDistance = entryBuilder
                 .startIntField(new TranslatableText("option.bobby.max_render_distance"), config.getMaxRenderDistance())
                 .setTooltip(new TranslatableText("tooltip.option.bobby.max_render_distance"))
@@ -55,6 +61,7 @@ public class BobbyConfigScreenFactory {
         general.addEntry(enabled);
         general.addEntry(noBlockEntities);
         general.addEntry(unloadDelaySecs);
+        general.addEntry(deleteUnusedRegionsAfterDays);
         general.addEntry(maxRenderDistance);
         general.addEntry(viewDistanceOverwrite);
 
@@ -62,6 +69,7 @@ public class BobbyConfigScreenFactory {
                 enabled.getValue(),
                 noBlockEntities.getValue(),
                 unloadDelaySecs.getValue(),
+                deleteUnusedRegionsAfterDays.getValue(),
                 maxRenderDistance.getValue(),
                 viewDistanceOverwrite.getValue()
         )));

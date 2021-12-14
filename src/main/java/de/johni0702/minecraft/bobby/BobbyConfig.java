@@ -12,6 +12,8 @@ public class BobbyConfig {
     private boolean noBlockEntities = true;
     @Comment("Delays the unloading of chunks which are outside your view distance.\nSaves you from having to reload all chunks when leaving the area for a short moment (e.g. cut scenes).\nDoes not work across dimensions.")
     private int unloadDelaySecs = 60;
+    @Comment("Delete regions from the cache when they have not been loaded for X days.\n\nThe cache for a given world is cleaned up whenever you disconnect from the server.\nEntire worlds are cleaned up when the game starts and you have not visited them for X days.\n\nSet to -1 to disabled.\nSet to 0 to clean up everything after every disconnect.")
+    private int deleteUnusedRegionsAfterDays = -1;
     @Comment("Changes the maximum value configurable for Render Distance.\n\nRequires Sodium.")
     private int maxRenderDistance = 32;
     @Comment("Overwrites the view-distance of the integrated server.\nThis allows Bobby to be useful in Singleplayer.\n\nDisabled when at 0.\nBobby is active in singleplayer only if this is enabled.\nRequires re-log to en-/disable.")
@@ -23,12 +25,14 @@ public class BobbyConfig {
             boolean enabled,
             boolean noBlockEntities,
             int unloadDelaySecs,
+            int deleteUnusedRegionsAfterDays,
             int maxRenderDistance,
             int viewDistanceOverwrite
     ) {
         this.enabled = enabled;
         this.noBlockEntities = noBlockEntities;
         this.unloadDelaySecs = unloadDelaySecs;
+        this.deleteUnusedRegionsAfterDays = deleteUnusedRegionsAfterDays;
         this.maxRenderDistance = maxRenderDistance;
         this.viewDistanceOverwrite = viewDistanceOverwrite;
     }
@@ -43,6 +47,10 @@ public class BobbyConfig {
 
     public int getUnloadDelaySecs() {
         return unloadDelaySecs;
+    }
+
+    public int getDeleteUnusedRegionsAfterDays() {
+        return deleteUnusedRegionsAfterDays;
     }
 
     public int getMaxRenderDistance() {
