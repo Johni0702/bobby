@@ -4,6 +4,7 @@ plugins {
 	id("com.github.breadmoirai.github-release") version "2.2.12"
 	id("com.matthewprenger.cursegradle") version "1.4.0"
 	id("com.modrinth.minotaur") version "1.1.0"
+	id("elect86.gik") version "0.0.4"
 }
 
 val modVersion: String by project
@@ -113,6 +114,7 @@ githubRelease {
 	token { project.property("github.token") as String }
 	owner(project.property("github.owner") as String)
 	repo(project.property("github.repo") as String)
+	targetCommitish { gik.head!!.id }
 	releaseName("Version ${project.version}")
 	releaseAssets(tasks.remapJar)
 	body(readChangelog())
