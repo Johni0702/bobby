@@ -11,7 +11,7 @@
   "option.bobby.taint_fake_chunks": "降低假区块的光照度",
   "tooltip.option.bobby.taint_fake_chunks": "降低了假区块的光照度，方便你分辨出真假的区别。",
   "option.bobby.unload_delay": "区块卸载延迟 (秒)",
-  "tooltip.option.bobby.unload_delay": "延迟卸下在你视线范围之外的区块。\n当你离开一个区域很短的时间时，可以省去重新加载所有块的麻烦。\n不能跨维度工作。",
+  "tooltip.option.bobby.unload_delay": "延迟卸下在你视线范围之外的区块。\n当你离开一个区域很短的时间时，可以省去重新加载所有区块的麻烦。\n不能跨维度工作。",
   "option.bobby.delete_unused_regions_after_days": "清理未使用的区域（天）",
   "tooltip.option.bobby.delete_unused_regions_after_days": "当区域在 X 天内没有被加载时，从缓存中删除。\n\n如果你有 X 天没有访问过某个世界，那么世界就会在进入游戏时被清理掉。\n\n设置为 -1 表示禁用。\n设置为 0，在每次断开连接后清理所有内容。",
   "option.bobby.max_render_distance": "最大渲染距离",
