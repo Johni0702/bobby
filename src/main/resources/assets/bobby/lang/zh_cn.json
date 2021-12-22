@@ -1,0 +1,21 @@
+{
+  "bobby.upgrade.required": "[Bobby] 这个世界包含旧版本的 Minecraft 数据. 使用 `/bobby upgrade` 升级它.",
+  "bobby.upgrade.not_enabled": "Bobby 未对此世界启用.",
+  "bobby.upgrade.begin": "[Bobby] 升级世界数据到当前的 Minecraft 版本. 可能需要几分钟.",
+  "bobby.upgrade.progress": "[Bobby] 升级了 %d 在 %d 区块中 (估测).",
+  "bobby.upgrade.done": "[Bobby] 世界数据升级完成。你的旧区块现在应该又能看到了。",
+  "title.bobby.config": "Bobby 设置",
+  "option.bobby.enabled": "启用",
+  "option.bobby.no_block_entities": "不要显示方块实体",
+  "tooltip.option.bobby.no_block_entities": "不要加载假区块中的方块实体（例如箱子）。\n这些实体每 Tick 均需要一次更新，这可能会增加性能消耗。\n\n默认情况下是启用的，因为方块实体的渲染距离通常比服务器视距的距离要小。",
+  "option.bobby.taint_fake_chunks": "降低假区块的光照度",
+  "tooltip.option.bobby.taint_fake_chunks": "降低了假区块的光照度，方便你分辨出真假的区别。",
+  "option.bobby.unload_delay": "区块卸载延迟 (秒)",
+  "tooltip.option.bobby.unload_delay": "延迟卸下在你视线范围之外的区块。\n当你离开一个区域很短的时间时，可以省去重新加载所有块的麻烦。\n不能跨维度工作。",
+  "option.bobby.delete_unused_regions_after_days": "清理未使用的区域（天）",
+  "tooltip.option.bobby.delete_unused_regions_after_days": "当区域在 X 天内没有被加载时，从缓存中删除。\n\n如果你有 X 天没有访问过某个世界，那么世界就会在进入游戏时被清理掉。\n\n设置为 -1 表示禁用。\n设置为 0，在每次断开连接后清理所有内容。",
+  "option.bobby.max_render_distance": "最大渲染距离",
+  "tooltip.option.bobby.max_render_distance": "改变可配置的渲染距离的最大值。\n\n需要 Sodium。",
+  "option.bobby.view_distance_overwrite": "单人游戏服务器视距",
+  "tooltip.option.bobby.view_distance_overwrite": "覆写内置服务器的视距。\n这允许 Bobby 在单人游戏中发挥作用。\n\n设置为 0 禁用。\n只有当这个功能被打开时，Bobby 才会在单人游戏中发挥作用。\n需要重新进入来启用/禁用。"
+}
