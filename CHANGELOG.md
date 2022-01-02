@@ -1,15 +1,11 @@
-### 3.1.0
+### 2.1.0-SNAPSHOT
 - Add option to automatically clean up unused cache after X days (#25)
 - Add option to taint fake chunks, so you can tell the difference from real ones (#41)
 - Force load all chunks every frame when rendering with ReplayMod or other FREX FlawlessFrames consumers
 - Fix realms not writing to one consistent folder (#55)
-
-### 3.0.1
 - Allow for render distances greater than 32 chunks even without Sodium (#61)
 - Fix render distance reverting to 32 in 1.18.1 (#61)
 - Fix black chunks with Starlight installed (#18)
-
-### 3.0.0
 - Update to Minecraft 1.18
 - Add `/bobby upgrade` to upgrade all chunks in cache to the current Minecraft version
 
