@@ -1,18 +1,14 @@
 package de.johni0702.minecraft.bobby;
 
-import com.mojang.serialization.Codec;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
+import de.johni0702.minecraft.bobby.mixin.VersionedChunkStorageAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import net.minecraft.SharedConstants;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLongArray;
-import net.minecraft.nbt.NbtOps;
 import net.minecraft.network.MessageType;
 import net.minecraft.text.TranslatableText;
 import net.minecraft.util.Util;
@@ -24,16 +20,14 @@ import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.BiomeKeys;
+import net.minecraft.world.biome.source.BiomeArray;
+import net.minecraft.world.biome.source.BiomeSource;
+import net.minecraft.world.chunk.Chunk;
 import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
-import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
-import net.minecraft.world.gen.chunk.ChunkGenerator;
-import net.minecraft.world.gen.chunk.FlatChunkGenerator;
 import net.minecraft.world.storage.StorageIoWorker;
 import net.minecraft.world.storage.VersionedChunkStorage;
 import org.apache.logging.log4j.LogManager;
@@ -49,7 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -79,18 +72,12 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             }
         }
     }
-    private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.createCodec(
-            Block.STATE_IDS,
-            BlockState.CODEC,
-            PalettedContainer.PaletteProvider.BLOCK_STATE,
-            Blocks.AIR.getDefaultState()
-    );
 
-    public static FakeChunkStorage getFor(Path directory, boolean cleanupOnClose) {
+    public static FakeChunkStorage getFor(Path directory, boolean cleanupOnClose, BiomeSource biomeSource) {
         if (!MinecraftClient.getInstance().isOnThread()) {
             throw new IllegalStateException("Must be called from main thread.");
         }
-        return active.computeIfAbsent(directory, f -> new FakeChunkStorage(directory, cleanupOnClose));
+        return active.computeIfAbsent(directory, f -> new FakeChunkStorage(directory, cleanupOnClose, biomeSource));
     }
 
     public static void closeAll() {
@@ -105,14 +92,16 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     }
 
     private final Path directory;
+    private final BiomeSource biomeSource;
     private final AtomicBoolean sentUpgradeNotification = new AtomicBoolean();
     @Nullable
     private final LastAccessFile lastAccess;
 
-    private FakeChunkStorage(Path directory, boolean cleanupOnClose) {
-        super(directory, MinecraftClient.getInstance().getDataFixer(), false);
+    private FakeChunkStorage(Path directory, boolean cleanupOnClose, BiomeSource biomeSource) {
+        super(directory.toFile(), MinecraftClient.getInstance().getDataFixer(), false);
 
         this.directory = directory;
+        this.biomeSource = biomeSource;
 
         LastAccessFile lastAccess = null;
         if (cleanupOnClose) {
@@ -149,7 +138,10 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         if (lastAccess != null) {
             lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
         }
-        setNbt(pos, chunk);
+        NbtCompound tag = new NbtCompound();
+        tag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
+        tag.put("Level", chunk);
+        setNbt(pos, tag);
     }
 
     public @Nullable NbtCompound loadTag(ChunkPos pos) throws IOException {
@@ -157,7 +149,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         if (nbt != null && lastAccess != null) {
             lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
         }
-        if (nbt != null && nbt.getInt("DataVersion") != SharedConstants.getGameVersion().getSaveVersion().getId()) {
+        if (nbt != null && nbt.getInt("DataVersion") != SharedConstants.getGameVersion().getWorldVersion()) {
             if (sentUpgradeNotification.compareAndSet(false, true)) {
                 MinecraftClient client = MinecraftClient.getInstance();
                 client.submit(() -> {
@@ -167,39 +159,30 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             }
             return null;
         }
-        return nbt;
+        return nbt != null ? nbt.getCompound("Level") : null;
     }
 
-    public NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
-        Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<Biome>> biomeCodec = PalettedContainer.createCodec(
-                biomeRegistry,
-                biomeRegistry.getCodec(),
-                PalettedContainer.PaletteProvider.BIOME,
-                biomeRegistry.getOrThrow(BiomeKeys.PLAINS)
-        );
-
+    public NbtCompound serialize(Chunk chunk, LightingProvider lightingProvider) {
         ChunkPos chunkPos = chunk.getPos();
         NbtCompound level = new NbtCompound();
-        level.putInt("DataVersion", SharedConstants.getGameVersion().getSaveVersion().getId());
         level.putInt("xPos", chunkPos.x);
-        level.putInt("yPos", chunk.getBottomSectionCoord());
         level.putInt("zPos", chunkPos.z);
 
         ChunkSection[] chunkSections = chunk.getSectionArray();
         NbtList sectionsTag = new NbtList();
 
-        for (int y = lightingProvider.getBottomY(); y < lightingProvider.getTopY(); y++) {
+        for (ChunkSection chunkSection : chunkSections) {
+            if (chunkSection == null) {
+                continue;
+            }
+            int y = chunkSection.getYOffset() >> 4;
             boolean empty = true;
 
             NbtCompound sectionTag = new NbtCompound();
             sectionTag.putByte("Y", (byte) y);
 
-            int i = chunk.sectionCoordToIndex(y);
-            ChunkSection chunkSection = i >= 0 && i < chunkSections.length ? chunkSections[i] : null;
-            if (chunkSection != null) {
-                sectionTag.put("block_states", BLOCK_CODEC.encodeStart(NbtOps.INSTANCE, chunkSection.getBlockStateContainer()).getOrThrow(false, LOGGER::error));
-                sectionTag.put("biomes", biomeCodec.encodeStart(NbtOps.INSTANCE, chunkSection.getBiomeContainer()).getOrThrow(false, LOGGER::error));
+            if (chunkSection != WorldChunk.EMPTY_SECTION) {
+                chunkSection.getContainer().write(sectionTag, "Palette", "BlockStates");
                 empty = false;
             }
 
@@ -220,7 +203,12 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             }
         }
 
-        level.put("sections", sectionsTag);
+        level.put("Sections", sectionsTag);
+
+        BiomeArray biomeArray = chunk.getBiomeArray();
+        if (biomeArray != null) {
+            level.putIntArray("Biomes", biomeArray.toIntArray());
+        }
 
         NbtList blockEntitiesTag = new NbtList();
         for (BlockPos pos : chunk.getBlockEntityPositions()) {
@@ -229,7 +217,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 blockEntitiesTag.add(blockEntityTag);
             }
         }
-        level.put("block_entities", blockEntitiesTag);
+        level.put("TileEntities", blockEntitiesTag);
 
         NbtCompound hightmapsTag = new NbtCompound();
         for (Map.Entry<Heightmap.Type, Heightmap> entry : chunk.getHeightmaps()) {
@@ -254,27 +242,27 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             LOGGER.error("Chunk file at {} is in the wrong location; relocating. (Expected {}, got {})", pos, pos, chunkPos);
         }
 
-        Registry<Biome> biomeRegistry = world.getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<Biome>> biomeCodec = PalettedContainer.createCodec(
-                biomeRegistry,
-                biomeRegistry.getCodec(),
-                PalettedContainer.PaletteProvider.BIOME,
-                biomeRegistry.getOrThrow(BiomeKeys.PLAINS)
-        );
-
-        NbtList sectionsTag = level.getList("sections", NbtElement.COMPOUND_TYPE);
+        BiomeArray biomeArray;
+        if (level.contains("Biomes", NbtElement.INT_ARRAY_TYPE)) {
+            biomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), world, level.getIntArray("Biomes"));
+        } else if (biomeSource != null) {
+            biomeArray = new BiomeArray(world.getRegistryManager().get(Registry.BIOME_KEY), world, chunkPos, biomeSource);
+        } else {
+            LOGGER.error("Chunk file at {} has neither Biomes key nor biomeSource.", pos);
+            return null;
+        }
+        NbtList sectionsTag = level.getList("Sections", NbtElement.COMPOUND_TYPE);
         ChunkSection[] chunkSections = new ChunkSection[world.countVerticalSections()];
-        ChunkNibbleArray[] blockLight = new ChunkNibbleArray[chunkSections.length + 2];
-        ChunkNibbleArray[] skyLight = new ChunkNibbleArray[chunkSections.length + 2];
+        ChunkNibbleArray[] blockLight = new ChunkNibbleArray[chunkSections.length];
+        ChunkNibbleArray[] skyLight = new ChunkNibbleArray[chunkSections.length];
 
         Arrays.fill(blockLight, COMPLETELY_DARK);
 
         for (int i = 0; i < sectionsTag.size(); i++) {
             NbtCompound sectionTag = sectionsTag.getCompound(i);
             int y = sectionTag.getByte("Y");
-            int yIndex = world.sectionCoordToIndex(y);
 
-            if (yIndex < -1 || yIndex > chunkSections.length) {
+            if (y < world.getBottomSectionCoord() || y >= world.getTopSectionCoord()) {
                 // There used to be a bug where we pass the block coordinates to the ChunkSection constructor (as was
                 // done in 1.16) but the constructor expects section coordinates now, leading to an incorrect y position
                 // being stored in the ChunkSection. And under specific circumstances (a chunk unload packet without
@@ -282,44 +270,29 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 // condition.
                 // We cannot just undo the scaling here because the Y stored to disk is only a byte, so the real Y may
                 // have overflown. Instead we will just ignore all sections for broken chunks.
-                // Or at least we used to do that but with the world height conversion, there are now legitimate OOB
-                // sections (cause the converter doesn't know whether the server has an extended depth), so we'll just
-                // skip the invalid ones.
-                continue;
+                Arrays.fill(chunkSections, null);
+                Arrays.fill(blockLight, COMPLETELY_DARK);
+                Arrays.fill(skyLight, null);
+                break;
             }
 
-            if (yIndex >= 0 && yIndex < chunkSections.length) {
-                PalettedContainer<BlockState> blocks;
-                if (sectionTag.contains("block_states", NbtElement.COMPOUND_TYPE)) {
-                    blocks = BLOCK_CODEC.parse(NbtOps.INSTANCE, sectionTag.getCompound("block_states"))
-                            .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
-                            .getOrThrow(false, LOGGER::error);
-                } else {
-                    blocks = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
-                }
-
-                PalettedContainer<Biome> biomes;
-                if (sectionTag.contains("biomes", NbtElement.COMPOUND_TYPE)) {
-                    biomes = biomeCodec.parse(NbtOps.INSTANCE, sectionTag.getCompound("biomes"))
-                            .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
-                            .getOrThrow(false, LOGGER::error);
-                } else {
-                    biomes = new PalettedContainer<>(biomeRegistry, biomeRegistry.getOrThrow(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME);
-                }
-
-                ChunkSection chunkSection = new ChunkSection(y, blocks, biomes);
+            if (sectionTag.contains("Palette", NbtElement.LIST_TYPE) && sectionTag.contains("BlockStates", NbtElement.LONG_ARRAY_TYPE)) {
+                ChunkSection chunkSection = new ChunkSection(y);
+                chunkSection.getContainer().read(
+                        sectionTag.getList("Palette", NbtElement.COMPOUND_TYPE),
+                        sectionTag.getLongArray("BlockStates"));
                 chunkSection.calculateCounts();
                 if (!chunkSection.isEmpty()) {
-                    chunkSections[yIndex] = chunkSection;
+                    chunkSections[world.sectionCoordToIndex(y)] = chunkSection;
                 }
             }
 
             if (sectionTag.contains("BlockLight", NbtElement.BYTE_ARRAY_TYPE)) {
-                blockLight[yIndex + 1] = new ChunkNibbleArray(sectionTag.getByteArray("BlockLight"));
+                blockLight[world.sectionCoordToIndex(y)] = new ChunkNibbleArray(sectionTag.getByteArray("BlockLight"));
             }
 
             if (sectionTag.contains("SkyLight", NbtElement.BYTE_ARRAY_TYPE)) {
-                skyLight[yIndex + 1] = new ChunkNibbleArray(sectionTag.getByteArray("SkyLight"));
+                skyLight[world.sectionCoordToIndex(y)] = new ChunkNibbleArray(sectionTag.getByteArray("SkyLight"));
             }
         }
 
@@ -349,7 +322,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             skyLight[y] = inferredSection;
         }
 
-        FakeChunk chunk = new FakeChunk(world, pos, chunkSections);
+        FakeChunk chunk = new FakeChunk(world, pos, biomeArray, chunkSections);
 
         NbtCompound hightmapsTag = level.getCompound("Heightmaps");
         EnumSet<Heightmap.Type> missingHightmapTypes = EnumSet.noneOf(Heightmap.Type.class);
@@ -366,7 +339,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         Heightmap.populateHeightmaps(chunk, missingHightmapTypes);
 
         if (!config.isNoBlockEntities()) {
-            NbtList blockEntitiesTag = level.getList("block_entities", NbtElement.COMPOUND_TYPE);
+            NbtList blockEntitiesTag = level.getList("TileEntities", NbtElement.COMPOUND_TYPE);
             for (int i = 0; i < blockEntitiesTag.size(); i++) {
                 chunk.addPendingBlockEntityNbt(blockEntitiesTag.getCompound(i));
             }
@@ -379,13 +352,13 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
             ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
 
-            for (int i = -1; i < chunkSections.length + 1; i++) {
+            for (int i = 0; i < chunkSections.length; i++) {
                 int y = world.sectionIndexToCoord(i);
                 if (blockLightProvider != null) {
-                    blockLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), blockLight[i + 1]);
+                    blockLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), blockLight[i]);
                 }
                 if (skyLightProvider != null && hasSkyLight) {
-                    skyLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), skyLight[i + 1]);
+                    skyLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), skyLight[i]);
                 }
             }
 
@@ -400,8 +373,6 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             for (BlockPos blockPos : chunk.getBlockEntityPositions()) {
                 chunk.getBlockEntity(blockPos);
             }
-
-            chunk.setShouldRenderOnUpdate(true);
 
             return chunk;
         };
@@ -424,9 +395,6 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     }
 
     public void upgrade(RegistryKey<World> worldKey, BiConsumer<Integer, Integer> progress) throws IOException {
-        Optional<RegistryKey<Codec<? extends ChunkGenerator>>> generatorKey =
-                Optional.of(Registry.CHUNK_GENERATOR.getKey(FlatChunkGenerator.CODEC).orElseThrow());
-
         List<ChunkPos> chunks;
         try (Stream<Path> stream = Files.list(directory)) {
             chunks = stream
@@ -443,7 +411,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         AtomicInteger total = new AtomicInteger(chunks.size());
         progress.accept(done.get(), total.get());
 
-        StorageIoWorker io = (StorageIoWorker) getWorker();
+        StorageIoWorker io = ((VersionedChunkStorageAccessor) this).getWorker();
 
         // We ideally split the actual work of upgrading the chunk NBT across multiple threads, leaving a few for MC
         int workThreads = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
@@ -465,7 +433,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                         return;
                     }
 
-                    nbt = updateChunkNbt(worldKey, null, nbt, generatorKey);
+                    nbt = updateChunkNbt(worldKey, null, nbt);
 
                     io.setResult(chunkPos, nbt).join();
 
@@ -486,7 +454,15 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         progress.accept(done.get(), total.get());
     }
 
-    private record RegionPos(int x, int z) {
+    private static class RegionPos {
+        private final int x;
+        private final int z;
+
+        private RegionPos(int x, int z) {
+            this.x = x;
+            this.z = z;
+        }
+
         public Stream<ChunkPos> getContainedChunks() {
             int baseX = x << 5;
             int baseZ = z << 5;
@@ -498,9 +474,5 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             }
             return Stream.of(result);
         }
-    }
-
-    private static void logRecoverableError(ChunkPos chunkPos, int y, String message) {
-        LOGGER.error("Recoverable errors when loading section [" + chunkPos.x + ", " + y + ", " + chunkPos.z + "]: " + message);
     }
 }

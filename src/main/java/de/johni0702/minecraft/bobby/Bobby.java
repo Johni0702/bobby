@@ -64,7 +64,7 @@ public class Bobby implements ClientModInitializer {
 
         configReference.subscribe(new TaintChunksConfigHandler()::update);
 
-        Util.getIoWorkerExecutor().submit(this::cleanupOldWorlds);
+        Util.getIoWorkerExecutor().execute(this::cleanupOldWorlds);
     }
 
     public BobbyConfig getConfig() {

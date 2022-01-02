@@ -56,8 +56,8 @@ tasks.processResources {
 
 tasks.withType<JavaCompile> {
 	options.encoding = "UTF-8"
-	sourceCompatibility = "17"
-	targetCompatibility = "17"
+	sourceCompatibility = "1.8"
+	targetCompatibility = "1.8"
 }
 
 tasks.withType<AbstractArchiveTask> {
@@ -137,7 +137,7 @@ curseforge {
 		})
 		addGameVersion("Fabric")
 		addGameVersion(minecraftVersion)
-		addGameVersion("Java 17")
+		addGameVersion("Java 16")
 	})
 	options(closureOf<com.matthewprenger.cursegradle.Options> {
 		javaVersionAutoDetect = false

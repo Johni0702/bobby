@@ -19,7 +19,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.stream.Stream;
@@ -35,6 +36,8 @@ public class LastAccessFile implements Closeable {
 
     private static final Logger LOGGER = LogManager.getLogger();
     private static final String FILE_NAME = "last_access";
+
+    private static final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
     private final Path path;
     private final Thread finalSaveThread = new Thread(this::saveOrLog, "bobby-save-last-access");
@@ -72,9 +75,9 @@ public class LastAccessFile implements Closeable {
     private void scheduleSave() {
         if (closed) return;
 
-        Util.getIoWorkerExecutor().submit(this::saveOrLog);
+        Util.getIoWorkerExecutor().execute(this::saveOrLog);
 
-        CompletableFuture.delayedExecutor(1, TimeUnit.MINUTES).execute(this::scheduleSave);
+        scheduler.schedule(this::scheduleSave, 1, TimeUnit.MINUTES);
     }
 
     private void saveOrLog() {
@@ -95,7 +98,7 @@ public class LastAccessFile implements Closeable {
             buf = new PacketByteBuf(Unpooled.buffer(accessMap.size() * 16));
 
             // We are storing the most recent access time right at the start, so we can quickly scan all worlds
-            buf.writeVarLong(accessMap.values().longStream().max().orElse(0));
+            buf.writeVarLong(accessMap.values().stream().mapToLong(Long::longValue).max().orElse(0));
 
             for (Long2LongMap.Entry entry : accessMap.long2LongEntrySet()) {
                 buf.writeVarInt(ChunkPos.getPackedX(entry.getLongKey()));

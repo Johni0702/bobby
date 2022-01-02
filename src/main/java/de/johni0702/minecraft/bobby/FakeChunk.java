@@ -3,23 +3,24 @@ package de.johni0702.minecraft.bobby;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.client.world.DummyClientTickScheduler;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.biome.source.BiomeArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.UpgradeData;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
-import net.minecraft.world.tick.ChunkTickScheduler;
 
 // Fake chunks are of this subclass, primarily so we have an easy way of identifying them.
 public class FakeChunk extends WorldChunk {
 
     private boolean isTainted;
 
-    public FakeChunk(World world, ChunkPos pos, ChunkSection[] sections) {
-        super(world, pos, UpgradeData.NO_UPGRADE_DATA, new ChunkTickScheduler<>(), new ChunkTickScheduler<>(), 0L, sections, null, null);
+    public FakeChunk(World world, ChunkPos pos, BiomeArray biomes, ChunkSection[] sections) {
+        super(world, pos, biomes, UpgradeData.NO_UPGRADE_DATA, DummyClientTickScheduler.get(), DummyClientTickScheduler.get(), 0L, sections, null);
     }
 
     public void setTainted(boolean enabled) {

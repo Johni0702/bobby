@@ -6,7 +6,6 @@
 - Allow for render distances greater than 32 chunks even without Sodium (#61)
 - Fix render distance reverting to 32 in 1.18.1 (#61)
 - Fix black chunks with Starlight installed (#18)
-- Update to Minecraft 1.18
 - Add `/bobby upgrade` to upgrade all chunks in cache to the current Minecraft version
 
 ### 2.0.4
