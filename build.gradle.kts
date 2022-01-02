@@ -1,9 +1,10 @@
 plugins {
-	id("fabric-loom") version "0.8-SNAPSHOT"
+	id("fabric-loom") version "0.10-SNAPSHOT"
 	id("maven-publish")
 	id("com.github.breadmoirai.github-release") version "2.2.12"
 	id("com.matthewprenger.cursegradle") version "1.4.0"
 	id("com.modrinth.minotaur") version "1.1.0"
+	id("elect86.gik") version "0.0.4"
 }
 
 val modVersion: String by project
@@ -18,12 +19,22 @@ val modMenuVersion: String by project
 dependencies {
 	val yarnMappings: String by project
 	val loaderVersion: String by project
+	val fabricApiVersion: String by project
 	val sodiumVersion: String by project
+	val starlightVersion: String by project
 	val confabricateVersion: String by project
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
 	mappings("net.fabricmc:yarn:${yarnMappings}:v2")
 	modImplementation("net.fabricmc:fabric-loader:${loaderVersion}")
-	modCompileOnly("com.github.jellysquid3:sodium-fabric:$sodiumVersion")
+
+	modImplementation(include(fabricApi.module("fabric-api-base", fabricApiVersion))!!)
+	modImplementation(include(fabricApi.module("fabric-command-api-v1", fabricApiVersion))!!)
+
+	// we don't need the full thing but our deps pull in an outdated one
+	modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
+
+	modCompileOnly("com.github.caffeinemc:sodium-fabric:$sodiumVersion")
+	modCompileOnly("com.modrinth.starlight:starlight:$starlightVersion")
 	modImplementation(include("ca.stellardrift:confabricate:$confabricateVersion")!!)
 	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")
 	modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
@@ -61,19 +72,12 @@ tasks.jar {
 publishing {
 	publications {
 		create("mavenJava", MavenPublication::class.java) {
-			artifact(tasks.remapJar) {
-				builtBy(tasks.remapJar)
-			}
+			from(components["java"])
 		}
 	}
 }
 
 repositories {
-	maven("https://jitpack.io") {
-		content {
-			includeGroup("com.github.jellysquid3")
-		}
-	}
 	maven("https://maven.shedaniel.me") {
 		content {
 			includeGroup("me.shedaniel.cloth")
@@ -83,6 +87,18 @@ repositories {
 		content {
 			includeGroup("com.terraformersmc")
 		}
+	}
+	ivy {
+		setUrl("https://github.com/CaffeineMC/")
+		patternLayout { artifact("[artifact]/releases/download/[revision]/[artifact]-[revision](+[classifier])(.[ext])") }
+		metadataSources { artifact() }
+		content { includeGroup("com.github.caffeinemc") }
+	}
+	ivy {
+		setUrl("https://cdn.modrinth.com/data/H8CaAYZC/versions/")
+		patternLayout { artifact("Starlight [revision] 1.18.x/[artifact]-[revision](+[classifier])(.[ext])") }
+		metadataSources { artifact() }
+		content { includeGroup("com.modrinth.starlight") }
 	}
 }
 
@@ -98,6 +114,7 @@ githubRelease {
 	token { project.property("github.token") as String }
 	owner(project.property("github.owner") as String)
 	repo(project.property("github.repo") as String)
+	targetCommitish { gik.head!!.id }
 	releaseName("Version ${project.version}")
 	releaseAssets(tasks.remapJar)
 	body(readChangelog())

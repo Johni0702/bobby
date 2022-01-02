@@ -3,7 +3,6 @@ package de.johni0702.minecraft.bobby;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
-import de.johni0702.minecraft.bobby.mixin.LightingProviderAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
@@ -37,18 +36,20 @@ import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.util.thread.ReentrantThreadExecutor;
+import net.minecraft.world.LightType;
 import net.minecraft.world.SaveProperties;
 import net.minecraft.world.World;
 import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.storage.LevelStorage;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Deque;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -100,15 +101,15 @@ public class FakeChunkManager {
                 .resolve(worldId.getNamespace())
                 .resolve(worldId.getPath());
 
-        storage = FakeChunkStorage.getFor(storagePath.toFile(), null);
+        storage = FakeChunkStorage.getFor(storagePath, true, null);
 
         FakeChunkStorage fallbackStorage = null;
         LevelStorage levelStorage = client.getLevelStorage();
         if (levelStorage.levelExists(FALLBACK_LEVEL_NAME)) {
             try (LevelStorage.Session session = levelStorage.createSession(FALLBACK_LEVEL_NAME)) {
-                File worldDirectory = session.getWorldDirectory(worldKey);
-                File regionDirectory = new File(worldDirectory, "region");
-                fallbackStorage = FakeChunkStorage.getFor(regionDirectory, getBiomeSource(session));
+                Path worldDirectory = session.getWorldDirectory(worldKey).toPath();
+                Path regionDirectory = worldDirectory.resolve("region");
+                fallbackStorage = FakeChunkStorage.getFor(regionDirectory, false, getBiomeSource(session));
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -124,7 +125,7 @@ public class FakeChunkManager {
         return storage;
     }
 
-    public void update(BooleanSupplier shouldKeepTicking) {
+    public void update(boolean blocking, BooleanSupplier shouldKeepTicking) {
         // Once a minute, force chunks to disk
         if (++ticksSinceLastSave > 20 * 60) {
             // completeAll is blocking, so we run it on the io pool
@@ -211,12 +212,24 @@ public class FakeChunkManager {
         }
 
         ObjectIterator<LoadingJob> loadingJobsIter = this.loadingJobs.values().iterator();
-        while (loadingJobsIter.hasNext()) {
+        jobs: while (loadingJobsIter.hasNext()) {
             LoadingJob loadingJob = loadingJobsIter.next();
 
             //noinspection OptionalAssignedToNull
-            if (loadingJob.result == null) {
-                continue; // still loading
+            while (loadingJob.result == null) {
+                // Still loading, should we wait for it?
+                if (blocking) {
+                    try {
+                        // This code path is not the default one, it doesn't need super high performance, and having the
+                        // workers notify the main thread just for it is probably not worth it.
+                        //noinspection BusyWait
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    continue jobs;
+                }
             }
 
             // Done loading
@@ -230,6 +243,20 @@ public class FakeChunkManager {
                 break;
             }
         }
+    }
+
+    public void loadMissingChunksFromCache() {
+        // We do this by temporarily reducing the client view distance to 0. That will unload all chunks and then try
+        // to re-load them (by canceling the unload when they were already loaded, or from the cache when they are
+        // missing).
+        int orgViewDistance = client.options.viewDistance;
+        client.options.viewDistance = 0;
+        try {
+            update(false, () -> false);
+        } finally {
+            client.options.viewDistance = orgViewDistance;
+        }
+        update(false, () -> false);
     }
 
     public boolean shouldBeLoaded(int x, int z) {
@@ -281,9 +308,9 @@ public class FakeChunkManager {
         cancelLoad(chunkPos);
         WorldChunk chunk = fakeChunks.remove(chunkPos);
         if (chunk != null) {
-            LightingProviderAccessor lightingProvider = (LightingProviderAccessor) clientChunkManager.getLightingProvider();
-            ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
-            ChunkLightProviderExt skyLightProvider = (ChunkLightProviderExt) lightingProvider.getSkyLightProvider();
+            LightingProvider lightingProvider = clientChunkManager.getLightingProvider();
+            ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
+            ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
             for (int i = 0; i < chunk.getSectionArray().length; i++) {
                 int y = world.sectionIndexToCoord(i);
                 if (blockLightProvider != null) {
@@ -314,13 +341,14 @@ public class FakeChunkManager {
             return integratedServer.getSaveProperties().getLevelName();
         }
 
+        // Needs to be before the ServerInfo because that one will contain a random IP
+        if (client.isConnectedToRealms()) {
+            return "realms";
+        }
+
         ServerInfo serverInfo = client.getCurrentServerEntry();
         if (serverInfo != null) {
             return serverInfo.address.replace(':', '_');
-        }
-
-        if (client.isConnectedToRealms()) {
-            return "realms";
         }
 
         return "unknown";
@@ -372,6 +400,10 @@ public class FakeChunkManager {
 
     public String getDebugString() {
         return "F: " + fakeChunks.size() + " L: " + loadingJobs.size() + " U: " + toBeUnloaded.size();
+    }
+
+    public Collection<WorldChunk> getFakeChunks() {
+        return fakeChunks.values();
     }
 
     private class LoadingJob implements Runnable {

@@ -1,17 +1,22 @@
 package de.johni0702.minecraft.bobby;
 
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
-import de.johni0702.minecraft.bobby.mixin.LightingProviderAccessor;
+import de.johni0702.minecraft.bobby.mixin.VersionedChunkStorageAccessor;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLongArray;
+import net.minecraft.network.MessageType;
+import net.minecraft.text.TranslatableText;
+import net.minecraft.util.Util;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
@@ -23,23 +28,39 @@ import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
+import net.minecraft.world.storage.StorageIoWorker;
 import net.minecraft.world.storage.VersionedChunkStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class FakeChunkStorage extends VersionedChunkStorage {
     private static final Logger LOGGER = LogManager.getLogger();
-    private static final Map<File, FakeChunkStorage> active = new HashMap<>();
+    private static final Map<Path, FakeChunkStorage> active = new HashMap<>();
+
+    public static final Pattern REGION_FILE_PATTERN = Pattern.compile("^r\\.(-?[0-9]+)\\.(-?[0-9]+)\\.mca$");
+
     private static final ChunkNibbleArray COMPLETELY_DARK = new ChunkNibbleArray();
     private static final ChunkNibbleArray COMPLETELY_LIT = new ChunkNibbleArray();
     static {
@@ -52,11 +73,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         }
     }
 
-    public static FakeChunkStorage getFor(File file, BiomeSource biomeSource) {
+    public static FakeChunkStorage getFor(Path directory, boolean cleanupOnClose, BiomeSource biomeSource) {
         if (!MinecraftClient.getInstance().isOnThread()) {
             throw new IllegalStateException("Must be called from main thread.");
         }
-        return active.computeIfAbsent(file, f -> new FakeChunkStorage(file, biomeSource));
+        return active.computeIfAbsent(directory, f -> new FakeChunkStorage(directory, cleanupOnClose, biomeSource));
     }
 
     public static void closeAll() {
@@ -70,14 +91,53 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         active.clear();
     }
 
+    private final Path directory;
     private final BiomeSource biomeSource;
+    private final AtomicBoolean sentUpgradeNotification = new AtomicBoolean();
+    @Nullable
+    private final LastAccessFile lastAccess;
 
-    private FakeChunkStorage(File file, BiomeSource biomeSource) {
-        super(file, null, false);
+    private FakeChunkStorage(Path directory, boolean cleanupOnClose, BiomeSource biomeSource) {
+        super(directory.toFile(), MinecraftClient.getInstance().getDataFixer(), false);
+
+        this.directory = directory;
         this.biomeSource = biomeSource;
+
+        LastAccessFile lastAccess = null;
+        if (cleanupOnClose) {
+            try {
+                Files.createDirectories(directory);
+
+                lastAccess = new LastAccessFile(directory);
+            } catch (IOException e) {
+                LOGGER.error("Failed to read last_access file:", e);
+            }
+        }
+        this.lastAccess = lastAccess;
+    }
+
+    @Override
+    public void close() throws IOException {
+        super.close();
+
+        if (lastAccess != null) {
+            int deleteUnusedRegionsAfterDays = Bobby.getInstance().getConfig().getDeleteUnusedRegionsAfterDays();
+            if (deleteUnusedRegionsAfterDays >= 0) {
+                for (long entry : lastAccess.pollRegionsOlderThan(deleteUnusedRegionsAfterDays)) {
+                    int x = ChunkPos.getPackedX(entry);
+                    int z = ChunkPos.getPackedZ(entry);
+                    Files.deleteIfExists(directory.resolve("r." + x + "." + z + ".mca"));
+                }
+            }
+
+            lastAccess.close();
+        }
     }
 
     public void save(ChunkPos pos, NbtCompound chunk) {
+        if (lastAccess != null) {
+            lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
+        }
         NbtCompound tag = new NbtCompound();
         tag.putInt("DataVersion", SharedConstants.getGameVersion().getWorldVersion());
         tag.put("Level", chunk);
@@ -85,11 +145,21 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     }
 
     public @Nullable NbtCompound loadTag(ChunkPos pos) throws IOException {
-        NbtCompound tag = getNbt(pos);
-        if (tag == null) {
+        NbtCompound nbt = getNbt(pos);
+        if (nbt != null && lastAccess != null) {
+            lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
+        }
+        if (nbt != null && nbt.getInt("DataVersion") != SharedConstants.getGameVersion().getWorldVersion()) {
+            if (sentUpgradeNotification.compareAndSet(false, true)) {
+                MinecraftClient client = MinecraftClient.getInstance();
+                client.submit(() -> {
+                    TranslatableText text = new TranslatableText("bobby.upgrade.required");
+                    client.submit(() -> client.inGameHud.addChatMessage(MessageType.SYSTEM, text, Util.NIL_UUID));
+                });
+            }
             return null;
         }
-        return tag.getCompound("Level");
+        return nbt != null ? nbt.getCompound("Level") : null;
     }
 
     public NbtCompound serialize(Chunk chunk, LightingProvider lightingProvider) {
@@ -252,7 +322,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             skyLight[y] = inferredSection;
         }
 
-        WorldChunk chunk = new FakeChunk(world, pos, biomeArray, chunkSections);
+        FakeChunk chunk = new FakeChunk(world, pos, biomeArray, chunkSections);
 
         NbtCompound hightmapsTag = level.getCompound("Heightmaps");
         EnumSet<Heightmap.Type> missingHightmapTypes = EnumSet.noneOf(Heightmap.Type.class);
@@ -278,9 +348,9 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         return () -> {
             boolean hasSkyLight = world.getDimension().hasSkyLight();
             ChunkManager chunkManager = world.getChunkManager();
-            LightingProviderAccessor lightingProvider = (LightingProviderAccessor) chunkManager.getLightingProvider();
-            ChunkLightProviderExt blockLightProvider = (ChunkLightProviderExt) lightingProvider.getBlockLightProvider();
-            ChunkLightProviderExt skyLightProvider = (ChunkLightProviderExt) lightingProvider.getSkyLightProvider();
+            LightingProvider lightingProvider = chunkManager.getLightingProvider();
+            ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
+            ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
 
             for (int i = 0; i < chunkSections.length; i++) {
                 int y = world.sectionIndexToCoord(i);
@@ -291,6 +361,8 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                     skyLightProvider.bobby_addSectionData(ChunkSectionPos.from(pos, y).asLong(), skyLight[i]);
                 }
             }
+
+            chunk.setTainted(config.isTaintFakeChunks());
 
             // MC lazily loads block entities when they are first accessed.
             // It does so in a thread-unsafe way though, so if they are first accessed from e.g. a render thread, this
@@ -319,6 +391,88 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             }
 
             return new ChunkNibbleArray(belowBytes);
+        }
+    }
+
+    public void upgrade(RegistryKey<World> worldKey, BiConsumer<Integer, Integer> progress) throws IOException {
+        List<ChunkPos> chunks;
+        try (Stream<Path> stream = Files.list(directory)) {
+            chunks = stream
+                    .map(Path::getFileName)
+                    .map(Path::toString)
+                    .map(REGION_FILE_PATTERN::matcher)
+                    .filter(Matcher::matches)
+                    .map(it -> new RegionPos(Integer.parseInt(it.group(1)), Integer.parseInt(it.group(2))))
+                    .flatMap(RegionPos::getContainedChunks)
+                    .collect(Collectors.toList());
+        }
+
+        AtomicInteger done = new AtomicInteger();
+        AtomicInteger total = new AtomicInteger(chunks.size());
+        progress.accept(done.get(), total.get());
+
+        StorageIoWorker io = ((VersionedChunkStorageAccessor) this).getWorker();
+
+        // We ideally split the actual work of upgrading the chunk NBT across multiple threads, leaving a few for MC
+        int workThreads = Math.max(1, Runtime.getRuntime().availableProcessors() - 2);
+        ExecutorService workExecutor = Executors.newFixedThreadPool(workThreads, new DefaultThreadFactory("bobby-upgrade-worker", true));
+
+        try {
+            for (ChunkPos chunkPos : chunks) {
+                workExecutor.submit(() -> {
+                    NbtCompound nbt;
+                    try {
+                        nbt = io.getNbt(chunkPos);
+                    } catch (IOException e) {
+                        LOGGER.warn("Error reading chunk " + chunkPos.x + "/" + chunkPos.z + ":", e);
+                        nbt = null;
+                    }
+
+                    if (nbt == null) {
+                        progress.accept(done.get(), total.decrementAndGet());
+                        return;
+                    }
+
+                    nbt = updateChunkNbt(worldKey, null, nbt);
+
+                    io.setResult(chunkPos, nbt).join();
+
+                    progress.accept(done.incrementAndGet(), total.get());
+                });
+            }
+        } finally {
+            workExecutor.shutdown();
+        }
+
+        try {
+            //noinspection ResultOfMethodCallIgnored
+            workExecutor.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+
+        progress.accept(done.get(), total.get());
+    }
+
+    private static class RegionPos {
+        private final int x;
+        private final int z;
+
+        private RegionPos(int x, int z) {
+            this.x = x;
+            this.z = z;
+        }
+
+        public Stream<ChunkPos> getContainedChunks() {
+            int baseX = x << 5;
+            int baseZ = z << 5;
+            ChunkPos[] result = new ChunkPos[32 * 32];
+            for (int x = 0; x < 32; x++) {
+                for (int z = 0; z < 32; z++) {
+                    result[x * 32 + z] = new ChunkPos(baseX + x, baseZ + z);
+                }
+            }
+            return Stream.of(result);
         }
     }
 }

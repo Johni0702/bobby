@@ -33,10 +33,22 @@ public class BobbyConfigScreenFactory {
                 .setDefaultValue(defaultConfig.isNoBlockEntities())
                 .build();
 
+        BooleanListEntry taintFakeChunks = entryBuilder
+                .startBooleanToggle(new TranslatableText("option.bobby.taint_fake_chunks"), config.isTaintFakeChunks())
+                .setTooltip(new TranslatableText("tooltip.option.bobby.taint_fake_chunks"))
+                .setDefaultValue(defaultConfig.isTaintFakeChunks())
+                .build();
+
         IntegerListEntry unloadDelaySecs = entryBuilder
                 .startIntField(new TranslatableText("option.bobby.unload_delay"), config.getUnloadDelaySecs())
                 .setTooltip(new TranslatableText("tooltip.option.bobby.unload_delay"))
                 .setDefaultValue(defaultConfig.getUnloadDelaySecs())
+                .build();
+
+        IntegerListEntry deleteUnusedRegionsAfterDays = entryBuilder
+                .startIntField(new TranslatableText("option.bobby.delete_unused_regions_after_days"), config.getDeleteUnusedRegionsAfterDays())
+                .setTooltip(new TranslatableText("tooltip.option.bobby.delete_unused_regions_after_days"))
+                .setDefaultValue(defaultConfig.getDeleteUnusedRegionsAfterDays())
                 .build();
 
         IntegerListEntry maxRenderDistance = entryBuilder
@@ -54,14 +66,18 @@ public class BobbyConfigScreenFactory {
         ConfigCategory general = builder.getOrCreateCategory(new TranslatableText("category.bobby.general"));
         general.addEntry(enabled);
         general.addEntry(noBlockEntities);
+        general.addEntry(taintFakeChunks);
         general.addEntry(unloadDelaySecs);
+        general.addEntry(deleteUnusedRegionsAfterDays);
         general.addEntry(maxRenderDistance);
         general.addEntry(viewDistanceOverwrite);
 
         builder.setSavingRunnable(() -> update.accept(new BobbyConfig(
                 enabled.getValue(),
                 noBlockEntities.getValue(),
+                taintFakeChunks.getValue(),
                 unloadDelaySecs.getValue(),
+                deleteUnusedRegionsAfterDays.getValue(),
                 maxRenderDistance.getValue(),
                 viewDistanceOverwrite.getValue()
         )));
