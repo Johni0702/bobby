@@ -13,7 +13,6 @@
     "IntegratedServerMixin",
     "MinecraftClientMixin",
     "sodium.SodiumChunkManagerMixin",
-    "sodium.SodiumClientPlayNetworkHandlerMixin",
     "sodium.SodiumGameOptionPagesMixin"
   ],
   "injectors": {
