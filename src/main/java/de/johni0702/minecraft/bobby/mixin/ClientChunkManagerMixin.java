@@ -49,7 +49,7 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
-        if (Bobby.getInstance().isEnabled()) {
+        if (Bobby.getInstance().isEnabled() && world.getRegistryKey() != null) {
             bobbyChunkManager = new FakeChunkManager(world, (ClientChunkManager) (Object) this);
             realChunksTracker.update(0, 0, getChunkMapRadius(loadDistance), null, null);
         }
