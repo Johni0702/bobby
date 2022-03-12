@@ -1,3 +1,5 @@
+### 3.1.1-SNAPSHOT
+
 ### 3.1.0
 - Add option to automatically clean up unused cache after X days (#25)
 - Add option to taint fake chunks, so you can tell the difference from real ones (#41)
