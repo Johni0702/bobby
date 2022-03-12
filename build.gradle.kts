@@ -123,7 +123,7 @@ githubRelease {
 	owner(project.property("github.owner") as String)
 	repo(project.property("github.repo") as String)
 	targetCommitish { gik.head!!.id }
-	releaseName("Version ${project.version}")
+	releaseName("Version ${project.version} for Minecraft $minecraftVersion")
 	releaseAssets(tasks.remapJar)
 	body(readChangelog())
 }
