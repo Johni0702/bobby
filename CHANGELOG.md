@@ -1,4 +1,5 @@
 ### 3.1.1-SNAPSHOT
+- Update to Minecraft 1.18.2
 - Remove dependency on full Confabricate (only including configurate-{core,hocon} now)
 
 ### 3.1.0

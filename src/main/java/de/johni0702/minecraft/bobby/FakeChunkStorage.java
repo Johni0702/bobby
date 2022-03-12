@@ -20,6 +20,7 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.util.registry.Registry;
+import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
@@ -172,11 +173,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
     public NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
         Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<Biome>> biomeCodec = PalettedContainer.createCodec(
-                biomeRegistry,
-                biomeRegistry.getCodec(),
+        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createCodec(
+                biomeRegistry.getIndexedEntries(),
+                biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
-                biomeRegistry.getOrThrow(BiomeKeys.PLAINS)
+                biomeRegistry.entryOf(BiomeKeys.PLAINS)
         );
 
         ChunkPos chunkPos = chunk.getPos();
@@ -255,11 +256,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         }
 
         Registry<Biome> biomeRegistry = world.getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<Biome>> biomeCodec = PalettedContainer.createCodec(
-                biomeRegistry,
-                biomeRegistry.getCodec(),
+        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createCodec(
+                biomeRegistry.getIndexedEntries(),
+                biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
-                biomeRegistry.getOrThrow(BiomeKeys.PLAINS)
+                biomeRegistry.entryOf(BiomeKeys.PLAINS)
         );
 
         NbtList sectionsTag = level.getList("sections", NbtElement.COMPOUND_TYPE);
@@ -298,13 +299,13 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                     blocks = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
                 }
 
-                PalettedContainer<Biome> biomes;
+                PalettedContainer<RegistryEntry<Biome>> biomes;
                 if (sectionTag.contains("biomes", NbtElement.COMPOUND_TYPE)) {
                     biomes = biomeCodec.parse(NbtOps.INSTANCE, sectionTag.getCompound("biomes"))
                             .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
                             .getOrThrow(false, LOGGER::error);
                 } else {
-                    biomes = new PalettedContainer<>(biomeRegistry, biomeRegistry.getOrThrow(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME);
+                    biomes = new PalettedContainer<>(biomeRegistry.getIndexedEntries(), biomeRegistry.entryOf(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME);
                 }
 
                 ChunkSection chunkSection = new ChunkSection(y, blocks, biomes);
