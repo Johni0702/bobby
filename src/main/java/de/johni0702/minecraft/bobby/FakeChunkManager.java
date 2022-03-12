@@ -16,30 +16,15 @@ import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.resource.DataPackSettings;
-import net.minecraft.resource.FileResourcePackProvider;
-import net.minecraft.resource.ResourceManager;
-import net.minecraft.resource.ResourcePackManager;
-import net.minecraft.resource.ResourcePackSource;
-import net.minecraft.resource.ResourceType;
-import net.minecraft.resource.ServerResourceManager;
-import net.minecraft.resource.VanillaDataPackProvider;
-import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.command.CommandManager;
 import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
-import net.minecraft.util.WorldSavePath;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.util.registry.RegistryKey;
-import net.minecraft.util.thread.ReentrantThreadExecutor;
 import net.minecraft.world.LightType;
-import net.minecraft.world.SaveProperties;
 import net.minecraft.world.World;
-import net.minecraft.world.biome.source.BiomeSource;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
@@ -52,8 +37,6 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
@@ -352,50 +335,6 @@ public class FakeChunkManager {
         }
 
         return "unknown";
-    }
-
-    private static BiomeSource getBiomeSource(LevelStorage.Session session) throws ExecutionException, InterruptedException {
-        // How difficult could this possibly be? Oh, right, datapacks are a thing
-        // Mostly puzzled this together from how MinecraftClient starts the integrated server.
-        try (ResourcePackManager resourcePackManager = new ResourcePackManager(
-                ResourceType.SERVER_DATA,
-                new VanillaDataPackProvider(),
-                new FileResourcePackProvider(session.getDirectory(WorldSavePath.DATAPACKS).toFile(), ResourcePackSource.PACK_SOURCE_WORLD)
-        )) {
-            DynamicRegistryManager.Impl registryTracker = DynamicRegistryManager.create();
-            DataPackSettings dataPackSettings = MinecraftServer.loadDataPacks(resourcePackManager, MinecraftClient.loadDataPackSettings(session), false);
-            // We need our own executor, cause the MC one already has lots of packets in it
-            Thread thread = Thread.currentThread();
-            ReentrantThreadExecutor<Runnable> executor = new ReentrantThreadExecutor<Runnable>("") {
-                @Override
-                protected Runnable createTask(Runnable runnable) {
-                    return runnable;
-                }
-
-                @Override
-                protected boolean canExecute(Runnable task) {
-                    return true;
-                }
-
-                @Override
-                protected Thread getThread() {
-                    return thread;
-                }
-            };
-            CompletableFuture<ServerResourceManager> completableFuture = ServerResourceManager.reload(
-                    resourcePackManager.createResourcePacks(),
-                    registryTracker,
-                    CommandManager.RegistrationEnvironment.INTEGRATED,
-                    2,
-                    Util.getMainWorkerExecutor(),
-                    executor
-            );
-            executor.runTasks(completableFuture::isDone);
-            ServerResourceManager serverResourceManager = completableFuture.get();
-            ResourceManager resourceManager = serverResourceManager.getResourceManager();
-            SaveProperties saveProperties = MinecraftClient.createSaveProperties(session, registryTracker, resourceManager, dataPackSettings);
-            return saveProperties.getGeneratorOptions().getChunkGenerator().getBiomeSource();
-        }
     }
 
     public String getDebugString() {
