@@ -1,4 +1,5 @@
 ### 3.1.1-SNAPSHOT
+- Remove dependency on full Confabricate (only including configurate-{core,hocon} now)
 
 ### 3.1.0
 - Add option to automatically clean up unused cache after X days (#25)

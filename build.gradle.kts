@@ -20,6 +20,9 @@ dependencies {
 	val yarnMappings: String by project
 	val loaderVersion: String by project
 	val fabricApiVersion: String by project
+	val configurateVersion: String by project
+	val geantyrefVersion: String by project
+	val hoconVersion: String by project
 	val sodiumVersion: String by project
 	val starlightVersion: String by project
 	val confabricateVersion: String by project
@@ -33,9 +36,14 @@ dependencies {
 	// we don't need the full thing but our deps pull in an outdated one
 	modImplementation("net.fabricmc.fabric-api:fabric-api:$fabricApiVersion")
 
+	implementation(include("org.spongepowered:configurate-core:$configurateVersion")!!)
+	implementation(include("org.spongepowered:configurate-hocon:$configurateVersion")!!)
+	include("io.leangen.geantyref:geantyref:$geantyrefVersion")
+	include("com.typesafe:config:$hoconVersion")
+
 	modCompileOnly("com.github.caffeinemc:sodium-fabric:$sodiumVersion")
 	modCompileOnly("com.modrinth.starlight:starlight:$starlightVersion")
-	modImplementation(include("ca.stellardrift:confabricate:$confabricateVersion")!!)
+	modCompileOnly("ca.stellardrift:confabricate:$confabricateVersion")
 	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")
 	modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
 }

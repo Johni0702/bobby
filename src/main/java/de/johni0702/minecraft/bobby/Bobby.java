@@ -9,7 +9,6 @@ import de.johni0702.minecraft.bobby.util.FlawlessFrames;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v1.ClientCommandManager;
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.ModContainer;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.world.ClientWorld;
@@ -18,9 +17,10 @@ import net.minecraft.world.chunk.WorldChunk;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.spongepowered.configurate.CommentedConfigurationNode;
-import org.spongepowered.configurate.ConfigurateException;
+import org.spongepowered.configurate.hocon.HoconConfigurationLoader;
 import org.spongepowered.configurate.reference.ConfigurationReference;
 import org.spongepowered.configurate.reference.ValueReference;
+import org.spongepowered.configurate.reference.WatchServiceListener;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,16 +43,18 @@ public class Bobby implements ClientModInitializer {
 
     private static final MinecraftClient client = MinecraftClient.getInstance();
 
-    private final ModContainer modContainer = FabricLoader.getInstance().getModContainer(Bobby.MOD_ID).orElseThrow(RuntimeException::new);
     private ValueReference<BobbyConfig, CommentedConfigurationNode> configReference;
 
     @Override
     public void onInitializeClient() {
         try {
-            ConfigurationReference<CommentedConfigurationNode> rootRef = Confabricate.configurationFor(modContainer, false);
+            Path configPath = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".conf");
+            @SuppressWarnings("resource") // we'll keep this around for the entire lifetime of our mod
+            ConfigurationReference<CommentedConfigurationNode> rootRef = getOrCreateWatchServiceListener()
+                    .listenToConfiguration(path -> HoconConfigurationLoader.builder().path(path).build(), configPath);
             configReference = rootRef.referenceTo(BobbyConfig.class);
             rootRef.saveAsync();
-        } catch (ConfigurateException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -135,6 +137,28 @@ public class Bobby implements ClientModInitializer {
         }
         Files.delete(parent);
         deleteParentsIfEmpty(parent);
+    }
+
+    private static WatchServiceListener getOrCreateWatchServiceListener() throws IOException {
+        try {
+            return Confabricate.fileWatcher();
+        } catch (NoClassDefFoundError | NoSuchMethodError ignored) {
+            return createWatchServiceListener();
+        }
+    }
+
+    private static WatchServiceListener createWatchServiceListener() throws IOException {
+        WatchServiceListener listener = WatchServiceListener.create();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                listener.close();
+            } catch (IOException e) {
+                LOGGER.catching(e);
+            }
+        }, "Configurate shutdown thread (Bobby)"));
+
+        return listener;
     }
 
     private class TaintChunksConfigHandler {
