@@ -1,7 +1,5 @@
-import com.modrinth.minotaur.dependencies.ModDependency
-
 plugins {
-	id("fabric-loom") version "0.11.+"
+	id("fabric-loom") version "0.12.+"
 	id("maven-publish")
 	id("com.github.breadmoirai.github-release") version "2.2.12"
 	id("com.matthewprenger.cursegradle") version "1.4.0"
@@ -157,19 +155,16 @@ tasks.modrinth {
 }
 
 modrinth {
+	debugMode.set(true)
 	token.set(project.property("modrinth.token") as String)
 	projectId.set(project.property("modrinth.id") as String)
 	uploadFile.set(tasks.remapJar.get())
 	changelog.set(readChangelog())
-	versionType.set("release")
-	loaders.set(listOf("fabric"))
-	gameVersions.set(listOf(minecraftVersion))
-	dependencies.set(
-		listOf(
-			ModDependency("AANobbMI", "optional"), // Sodium
-			ModDependency("mOgUt4GM", "optional"), // Mod Menu
-		)
-	)
+	dependencies {
+		optional.project("9s6osm5g") // Cloth Config
+		optional.project("mOgUt4GM") // Mod Menu
+		optional.project("AANobbMI") // Sodium
+	}
 }
 
 val publishAll by tasks.registering {
