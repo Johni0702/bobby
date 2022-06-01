@@ -155,8 +155,7 @@ tasks.modrinth {
 }
 
 modrinth {
-	debugMode.set(true)
-	token.set(project.property("modrinth.token") as String)
+	token.set(project.findProperty("modrinth.token") as String? ?: "DUMMY")
 	projectId.set(project.property("modrinth.id") as String)
 	uploadFile.set(tasks.remapJar.get())
 	changelog.set(readChangelog())
