@@ -7,7 +7,7 @@ import me.shedaniel.clothconfig2.gui.entries.BooleanListEntry;
 import me.shedaniel.clothconfig2.gui.entries.IntegerListEntry;
 import me.shedaniel.clothconfig2.gui.entries.IntegerSliderEntry;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.TranslatableText;
+import net.minecraft.text.Text;
 
 import java.util.function.Consumer;
 
@@ -17,53 +17,53 @@ public class BobbyConfigScreenFactory {
 
         ConfigBuilder builder = ConfigBuilder.create()
                 .setParentScreen(parent)
-                .setTitle(new TranslatableText("title.bobby.config"));
+                .setTitle(Text.translatable("title.bobby.config"));
 
 
         ConfigEntryBuilder entryBuilder = builder.entryBuilder();
 
         BooleanListEntry enabled = entryBuilder
-                .startBooleanToggle(new TranslatableText("option.bobby.enabled"), config.isEnabled())
+                .startBooleanToggle(Text.translatable("option.bobby.enabled"), config.isEnabled())
                 .setDefaultValue(defaultConfig.isEnabled())
                 .build();
 
         BooleanListEntry noBlockEntities = entryBuilder
-                .startBooleanToggle(new TranslatableText("option.bobby.no_block_entities"), config.isNoBlockEntities())
-                .setTooltip(new TranslatableText("tooltip.option.bobby.no_block_entities"))
+                .startBooleanToggle(Text.translatable("option.bobby.no_block_entities"), config.isNoBlockEntities())
+                .setTooltip(Text.translatable("tooltip.option.bobby.no_block_entities"))
                 .setDefaultValue(defaultConfig.isNoBlockEntities())
                 .build();
 
         BooleanListEntry taintFakeChunks = entryBuilder
-                .startBooleanToggle(new TranslatableText("option.bobby.taint_fake_chunks"), config.isTaintFakeChunks())
-                .setTooltip(new TranslatableText("tooltip.option.bobby.taint_fake_chunks"))
+                .startBooleanToggle(Text.translatable("option.bobby.taint_fake_chunks"), config.isTaintFakeChunks())
+                .setTooltip(Text.translatable("tooltip.option.bobby.taint_fake_chunks"))
                 .setDefaultValue(defaultConfig.isTaintFakeChunks())
                 .build();
 
         IntegerListEntry unloadDelaySecs = entryBuilder
-                .startIntField(new TranslatableText("option.bobby.unload_delay"), config.getUnloadDelaySecs())
-                .setTooltip(new TranslatableText("tooltip.option.bobby.unload_delay"))
+                .startIntField(Text.translatable("option.bobby.unload_delay"), config.getUnloadDelaySecs())
+                .setTooltip(Text.translatable("tooltip.option.bobby.unload_delay"))
                 .setDefaultValue(defaultConfig.getUnloadDelaySecs())
                 .build();
 
         IntegerListEntry deleteUnusedRegionsAfterDays = entryBuilder
-                .startIntField(new TranslatableText("option.bobby.delete_unused_regions_after_days"), config.getDeleteUnusedRegionsAfterDays())
-                .setTooltip(new TranslatableText("tooltip.option.bobby.delete_unused_regions_after_days"))
+                .startIntField(Text.translatable("option.bobby.delete_unused_regions_after_days"), config.getDeleteUnusedRegionsAfterDays())
+                .setTooltip(Text.translatable("tooltip.option.bobby.delete_unused_regions_after_days"))
                 .setDefaultValue(defaultConfig.getDeleteUnusedRegionsAfterDays())
                 .build();
 
         IntegerListEntry maxRenderDistance = entryBuilder
-                .startIntField(new TranslatableText("option.bobby.max_render_distance"), config.getMaxRenderDistance())
-                .setTooltip(new TranslatableText("tooltip.option.bobby.max_render_distance"))
+                .startIntField(Text.translatable("option.bobby.max_render_distance"), config.getMaxRenderDistance())
+                .setTooltip(Text.translatable("tooltip.option.bobby.max_render_distance"))
                 .setDefaultValue(defaultConfig.getMaxRenderDistance())
                 .build();
 
         IntegerSliderEntry viewDistanceOverwrite = entryBuilder
-                .startIntSlider(new TranslatableText("option.bobby.view_distance_overwrite"), config.getViewDistanceOverwrite(), 0, 32)
-                .setTooltip(new TranslatableText("tooltip.option.bobby.view_distance_overwrite"))
+                .startIntSlider(Text.translatable("option.bobby.view_distance_overwrite"), config.getViewDistanceOverwrite(), 0, 32)
+                .setTooltip(Text.translatable("tooltip.option.bobby.view_distance_overwrite"))
                 .setDefaultValue(defaultConfig.getViewDistanceOverwrite())
                 .build();
 
-        ConfigCategory general = builder.getOrCreateCategory(new TranslatableText("category.bobby.general"));
+        ConfigCategory general = builder.getOrCreateCategory(Text.translatable("category.bobby.general"));
         general.addEntry(enabled);
         general.addEntry(noBlockEntities);
         general.addEntry(taintFakeChunks);

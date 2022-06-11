@@ -13,12 +13,12 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLongArray;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.network.MessageType;
-import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Util;
+import net.minecraft.network.message.MessageType;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.registry.DynamicRegistryManager;
 import net.minecraft.util.registry.Registry;
 import net.minecraft.util.registry.RegistryEntry;
 import net.minecraft.util.registry.RegistryKey;
@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +82,8 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             }
         }
     }
-    private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.createCodec(
+    // method_44343 = createCodec
+    private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.method_44343(
             Block.STATE_IDS,
             BlockState.CODEC,
             PalettedContainer.PaletteProvider.BLOCK_STATE,
@@ -153,27 +156,30 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         setNbt(pos, chunk);
     }
 
-    public @Nullable NbtCompound loadTag(ChunkPos pos) throws IOException {
-        NbtCompound nbt = getNbt(pos);
-        if (nbt != null && lastAccess != null) {
+    public @Nullable NbtCompound loadTag(ChunkPos pos) throws IOException, ExecutionException, InterruptedException {
+        Optional<NbtCompound> nbt = getNbt(pos).get();
+        if (nbt.isPresent() && lastAccess != null) {
             lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
         }
-        if (nbt != null && nbt.getInt("DataVersion") != SharedConstants.getGameVersion().getSaveVersion().getId()) {
+        if (nbt.isPresent() && nbt.get().getInt("DataVersion") != SharedConstants.getGameVersion().getSaveVersion().getId()) {
             if (sentUpgradeNotification.compareAndSet(false, true)) {
                 MinecraftClient client = MinecraftClient.getInstance();
                 client.submit(() -> {
-                    TranslatableText text = new TranslatableText("bobby.upgrade.required");
-                    client.submit(() -> client.inGameHud.addChatMessage(MessageType.SYSTEM, text, Util.NIL_UUID));
+                    Text text = Text.translatable("bobby.upgrade.required");
+                    DynamicRegistryManager.Immutable registryManager = DynamicRegistryManager.BUILTIN.get();
+                    Registry<MessageType> registry = registryManager.get(Registry.MESSAGE_TYPE_KEY);
+                    client.submit(() -> client.inGameHud.onGameMessage(registry.get(MessageType.SYSTEM.getRegistry()), text));
                 });
             }
             return null;
         }
-        return nbt;
+        return nbt.orElse(null);
     }
 
     public NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
         Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createCodec(
+        // method_44343 = createCodec
+        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.method_44343(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
@@ -200,7 +206,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             ChunkSection chunkSection = i >= 0 && i < chunkSections.length ? chunkSections[i] : null;
             if (chunkSection != null) {
                 sectionTag.put("block_states", BLOCK_CODEC.encodeStart(NbtOps.INSTANCE, chunkSection.getBlockStateContainer()).getOrThrow(false, LOGGER::error));
-                sectionTag.put("biomes", biomeCodec.encodeStart(NbtOps.INSTANCE, chunkSection.getBiomeContainer()).getOrThrow(false, LOGGER::error));
+                sectionTag.put("biomes", biomeCodec.encodeStart(NbtOps.INSTANCE, chunkSection.getBiomeContainer().method_44350()).getOrThrow(false, LOGGER::error));
                 empty = false;
             }
 
@@ -256,7 +262,8 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         }
 
         Registry<Biome> biomeRegistry = world.getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createCodec(
+        // method_44343 = createCodec
+        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.method_44343(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
@@ -455,8 +462,12 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 workExecutor.submit(() -> {
                     NbtCompound nbt;
                     try {
-                        nbt = io.getNbt(chunkPos);
-                    } catch (IOException e) {
+                        Optional<NbtCompound> nbtCompound = io.readChunkData(chunkPos).get();
+                        if (nbtCompound.isEmpty()) {
+                            return;
+                        }
+                        nbt = nbtCompound.get();
+                    } catch (ExecutionException | InterruptedException e) {
                         LOGGER.warn("Error reading chunk " + chunkPos.x + "/" + chunkPos.z + ":", e);
                         nbt = null;
                     }

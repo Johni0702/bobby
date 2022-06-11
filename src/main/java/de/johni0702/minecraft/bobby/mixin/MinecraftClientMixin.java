@@ -5,7 +5,6 @@ import de.johni0702.minecraft.bobby.FakeChunkStorage;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
-import net.minecraft.client.option.Option;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Util;
 import net.minecraft.util.profiler.Profiler;
@@ -37,8 +36,8 @@ public abstract class MinecraftClientMixin {
 
         profiler.push("bobbyUpdate");
 
-        int maxFps = options.maxFps;
-        long frameTime = 1_000_000_000 / (maxFps == Option.FRAMERATE_LIMIT.getMax() ? 120 : maxFps);
+        int maxFps = options.getMaxFps().getValue();
+        long frameTime = 1_000_000_000 / (maxFps == GameOptions.MAX_FRAMERATE ? 120 : maxFps);
         // Arbitrarily choosing 1/4 of frame time as our max budget, that way we're hopefully not noticeable.
         long frameBudget = frameTime / 4;
         long timeLimit = Util.getMeasuringTimeNano() + frameBudget;

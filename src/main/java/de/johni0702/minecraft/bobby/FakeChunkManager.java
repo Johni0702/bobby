@@ -37,6 +37,7 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
@@ -128,7 +129,7 @@ public class FakeChunkManager {
         ChunkPos playerChunkPos = player.getChunkPos();
         int newCenterX =  playerChunkPos.x;
         int newCenterZ = playerChunkPos.z;
-        int newViewDistance = client.options.viewDistance;
+        int newViewDistance = client.options.getViewDistance().getValue();
         chunkTracker.update(newCenterX, newCenterZ, newViewDistance, chunkPos -> {
             // Chunk is now outside view distance, can be unloaded / cancelled
             cancelLoad(chunkPos);
@@ -232,12 +233,12 @@ public class FakeChunkManager {
         // We do this by temporarily reducing the client view distance to 0. That will unload all chunks and then try
         // to re-load them (by canceling the unload when they were already loaded, or from the cache when they are
         // missing).
-        int orgViewDistance = client.options.viewDistance;
-        client.options.viewDistance = 0;
+        int orgViewDistance = client.options.getViewDistance().getValue();
+        client.options.getViewDistance().setValue(0);
         try {
             update(false, () -> false);
         } finally {
-            client.options.viewDistance = orgViewDistance;
+            client.options.getViewDistance().setValue(orgViewDistance);
         }
         update(false, () -> false);
     }
@@ -260,7 +261,7 @@ public class FakeChunkManager {
                     return new Pair<>(tag, fallbackStorage);
                 }
             }
-        } catch (IOException e) {
+        } catch (IOException | ExecutionException | InterruptedException e) {
             e.printStackTrace();
         }
         return null;

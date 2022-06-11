@@ -7,7 +7,7 @@ import de.johni0702.minecraft.bobby.commands.UpgradeCommand;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import de.johni0702.minecraft.bobby.util.FlawlessFrames;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v1.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static net.fabricmc.fabric.api.client.command.v1.ClientCommandManager.literal;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 public class Bobby implements ClientModInitializer {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -58,9 +58,7 @@ public class Bobby implements ClientModInitializer {
             e.printStackTrace();
         }
 
-        ClientCommandManager.DISPATCHER.register(literal("bobby")
-                .then(literal("upgrade").executes(new UpgradeCommand()))
-        );
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> dispatcher.register(literal("bobby").then(literal("upgrade").executes(new UpgradeCommand()))));
 
         FlawlessFrames.onClientInitialization();
 
