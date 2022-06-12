@@ -12,6 +12,8 @@
     "GameRendererMixin",
     "IntegratedServerMixin",
     "MinecraftClientMixin",
+    "SimpleOptionAccessor",
+    "ValidatingIntSliderCallbacksAccessor",
     "sodium.SodiumChunkManagerMixin",
     "sodium.SodiumClientPlayNetworkHandlerMixin",
     "sodium.SodiumGameOptionPagesMixin"

@@ -5,12 +5,15 @@ import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import de.johni0702.minecraft.bobby.commands.UpgradeCommand;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
+import de.johni0702.minecraft.bobby.mixin.SimpleOptionAccessor;
+import de.johni0702.minecraft.bobby.mixin.ValidatingIntSliderCallbacksAccessor;
 import de.johni0702.minecraft.bobby.util.FlawlessFrames;
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.fabric.api.client.command.v1.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.option.SimpleOption;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Util;
 import net.minecraft.world.chunk.WorldChunk;
@@ -29,7 +32,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static net.fabricmc.fabric.api.client.command.v1.ClientCommandManager.literal;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 public class Bobby implements ClientModInitializer {
     private static final Logger LOGGER = LogManager.getLogger();
@@ -58,13 +61,14 @@ public class Bobby implements ClientModInitializer {
             e.printStackTrace();
         }
 
-        ClientCommandManager.DISPATCHER.register(literal("bobby")
-                .then(literal("upgrade").executes(new UpgradeCommand()))
-        );
+        ClientCommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess) ->
+                dispatcher.register(literal("bobby")
+                        .then(literal("upgrade").executes(new UpgradeCommand())))));
 
         FlawlessFrames.onClientInitialization();
 
         configReference.subscribe(new TaintChunksConfigHandler()::update);
+        configReference.subscribe(new MaxRenderDistanceConfigHandler()::update);
 
         Util.getIoWorkerExecutor().submit(this::cleanupOldWorlds);
     }
@@ -186,6 +190,42 @@ public class Bobby implements ClientModInitializer {
 
             for (WorldChunk fakeChunk : bobbyChunkManager.getFakeChunks()) {
                 ((FakeChunk) fakeChunk).setTainted(enabled);
+            }
+        }
+    }
+
+    private class MaxRenderDistanceConfigHandler {
+        private int oldMaxRenderDistance = 0;
+
+        {
+            update(getConfig(), true);
+        }
+
+        public void update(BobbyConfig config) {
+            update(config, false);
+        }
+
+        public void update(BobbyConfig config, boolean increaseOnly) {
+            client.submit(() -> setMaxRenderDistance(config.getMaxRenderDistance(), increaseOnly));
+        }
+
+        @SuppressWarnings({"ConstantConditions", "unchecked"})
+        private void setMaxRenderDistance(int newMaxRenderDistance, boolean increaseOnly) {
+            if (oldMaxRenderDistance == newMaxRenderDistance) {
+                return;
+            }
+            oldMaxRenderDistance = newMaxRenderDistance;
+
+            SimpleOption<Integer> viewDistance = client.options.getViewDistance();
+            if (viewDistance.getCallbacks() instanceof SimpleOption.ValidatingIntSliderCallbacks callbacks) {
+                ValidatingIntSliderCallbacksAccessor callbacksAcc = (ValidatingIntSliderCallbacksAccessor)(Object) callbacks;
+                if (increaseOnly) {
+                    callbacksAcc.setMaxInclusive(Math.max(callbacks.maxInclusive(), newMaxRenderDistance));
+                } else {
+                    callbacksAcc.setMaxInclusive(newMaxRenderDistance);
+                }
+                SimpleOptionAccessor<Integer> optionAccessor = (SimpleOptionAccessor<Integer>)(Object) viewDistance;
+                optionAccessor.setCodec(callbacks.codec());
             }
         }
     }

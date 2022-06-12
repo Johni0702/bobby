@@ -29,14 +29,15 @@ import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.storage.LevelStorage;
-import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
@@ -50,7 +51,7 @@ public class FakeChunkManager {
     private final ClientChunkManager clientChunkManager;
     private final ClientChunkManagerExt clientChunkManagerExt;
     private final FakeChunkStorage storage;
-    private final @Nullable FakeChunkStorage fallbackStorage;
+    private final List<FakeChunkStorage> storages;
     private int ticksSinceLastSave;
 
     private final Long2ObjectMap<WorldChunk> fakeChunks = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
@@ -61,8 +62,9 @@ public class FakeChunkManager {
     // to remove entries from the middle of the queue.
     private final Deque<Pair<Long, Long>> unloadQueue = new ArrayDeque<>();
 
-    // There unfortunately is only a synchronous api for loading chunks (even though that one just waits on a
-    // CompletableFuture, annoying but oh well), so we call that blocking api from a separate thread pool.
+    // The api for loading chunks unfortunately does not handle cancellation, so we utilize a separate thread pool to
+    // ensure only a small number of tasks are active at any one time, and all others can still be cancelled before
+    // they are submitted.
     // The size of the pool must be sufficiently large such that there is always at least one query operation
     // running, as otherwise the storage io worker will start writing chunks which slows everything down to a crawl.
     private static final ExecutorService loadExecutor = Executors.newFixedThreadPool(8, new DefaultThreadFactory("bobby-loading", true));
@@ -97,7 +99,12 @@ public class FakeChunkManager {
                 e.printStackTrace();
             }
         }
-        this.fallbackStorage = fallbackStorage;
+
+        if (fallbackStorage == null) {
+            storages = List.of(storage);
+        } else {
+            storages = List.of(storage, fallbackStorage);
+        }
     }
 
     public WorldChunk getChunk(int x, int z) {
@@ -109,7 +116,7 @@ public class FakeChunkManager {
     }
 
     public void update(boolean blocking, BooleanSupplier shouldKeepTicking) {
-        update(blocking, shouldKeepTicking, client.options.viewDistance);
+        update(blocking, shouldKeepTicking, client.options.getViewDistance().getValue());
     }
 
     private void update(boolean blocking, BooleanSupplier shouldKeepTicking, int newViewDistance) {
@@ -243,24 +250,21 @@ public class FakeChunkManager {
         return chunkTracker.isInViewDistance(x, z);
     }
 
-    private @Nullable Pair<NbtCompound, FakeChunkStorage> loadTag(int x, int z) {
-        ChunkPos chunkPos = new ChunkPos(x, z);
-        NbtCompound tag;
-        try {
-            tag = storage.loadTag(chunkPos);
-            if (tag != null) {
-                return new Pair<>(tag, storage);
+    private CompletableFuture<Optional<Pair<NbtCompound, FakeChunkStorage>>> loadTag(int x, int z) {
+        return loadTag(new ChunkPos(x, z), 0);
+    }
+
+    private CompletableFuture<Optional<Pair<NbtCompound, FakeChunkStorage>>> loadTag(ChunkPos chunkPos, int storageIndex) {
+        FakeChunkStorage storage = storages.get(storageIndex);
+        return storage.loadTag(chunkPos).thenCompose(maybeTag -> {
+            if (maybeTag.isPresent()) {
+                return CompletableFuture.completedFuture(Optional.of(new Pair<>(maybeTag.get(), storage)));
             }
-            if (fallbackStorage != null) {
-                tag = fallbackStorage.loadTag(chunkPos);
-                if (tag != null) {
-                    return new Pair<>(tag, fallbackStorage);
-                }
+            if (storageIndex + 1 < storages.size()) {
+                return loadTag(chunkPos, storageIndex + 1);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+            return CompletableFuture.completedFuture(Optional.empty());
+        });
     }
 
     public void load(int x, int z, NbtCompound tag, FakeChunkStorage storage) {
@@ -359,8 +363,17 @@ public class FakeChunkManager {
             if (cancelled) {
                 return;
             }
-            result = Optional.ofNullable(loadTag(x, z))
-                    .map(it -> it.getRight().deserialize(new ChunkPos(x, z), it.getLeft(), world));
+            Optional<Pair<NbtCompound, FakeChunkStorage>> value;
+            try {
+                value = loadTag(x, z).get();
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+                value = Optional.empty();
+            }
+            if (cancelled) {
+                return;
+            }
+            result = value.map(it -> it.getRight().deserialize(new ChunkPos(x, z), it.getLeft(), world));
         }
 
         public void complete() {

@@ -7,15 +7,14 @@ import net.minecraft.SharedConstants;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.class_7522;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLongArray;
 import net.minecraft.nbt.NbtOps;
-import net.minecraft.network.MessageType;
-import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Util;
+import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -51,6 +50,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -80,7 +81,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             }
         }
     }
-    private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.createCodec(
+    private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.method_44343(
             Block.STATE_IDS,
             BlockState.CODEC,
             PalettedContainer.PaletteProvider.BLOCK_STATE,
@@ -153,8 +154,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         setNbt(pos, chunk);
     }
 
-    public @Nullable NbtCompound loadTag(ChunkPos pos) throws IOException {
-        NbtCompound nbt = getNbt(pos);
+    public CompletableFuture<Optional<NbtCompound>> loadTag(ChunkPos pos) {
+        return getNbt(pos).thenApply(maybeNbt -> maybeNbt.map(nbt -> loadTag(pos, nbt)));
+    }
+
+    private NbtCompound loadTag(ChunkPos pos, NbtCompound nbt) {
         if (nbt != null && lastAccess != null) {
             lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
         }
@@ -162,8 +166,8 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             if (sentUpgradeNotification.compareAndSet(false, true)) {
                 MinecraftClient client = MinecraftClient.getInstance();
                 client.submit(() -> {
-                    TranslatableText text = new TranslatableText("bobby.upgrade.required");
-                    client.submit(() -> client.inGameHud.addChatMessage(MessageType.SYSTEM, text, Util.NIL_UUID));
+                    Text text = Text.translatable("bobby.upgrade.required");
+                    client.submit(() -> client.inGameHud.getChatHud().addMessage(text));
                 });
             }
             return null;
@@ -173,7 +177,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
     public NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
         Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createCodec(
+        Codec<class_7522<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.method_44347(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
@@ -256,7 +260,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         }
 
         Registry<Biome> biomeRegistry = world.getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createCodec(
+        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.method_44343(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
@@ -455,8 +459,8 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 workExecutor.submit(() -> {
                     NbtCompound nbt;
                     try {
-                        nbt = io.getNbt(chunkPos);
-                    } catch (IOException e) {
+                        nbt = io.readChunkData(chunkPos).join().orElse(null);
+                    } catch (CompletionException e) {
                         LOGGER.warn("Error reading chunk " + chunkPos.x + "/" + chunkPos.z + ":", e);
                         nbt = null;
                     }

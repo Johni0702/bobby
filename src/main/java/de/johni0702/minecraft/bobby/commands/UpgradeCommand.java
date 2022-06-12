@@ -5,14 +5,11 @@ import com.mojang.brigadier.context.CommandContext;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
-import net.fabricmc.fabric.api.client.command.v1.FabricClientCommandSource;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.command.CommandException;
-import net.minecraft.network.MessageType;
 import net.minecraft.text.Text;
-import net.minecraft.text.TranslatableText;
-import net.minecraft.util.Util;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -28,11 +25,11 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
 
         FakeChunkManager bobbyChunkManager = ((ClientChunkManagerExt) world.getChunkManager()).bobby_getFakeChunkManager();
         if (bobbyChunkManager == null) {
-            throw new CommandException(new TranslatableText("bobby.upgrade.not_enabled"));
+            throw new CommandException(Text.translatable("bobby.upgrade.not_enabled"));
         }
         FakeChunkStorage storage = bobbyChunkManager.getStorage();
 
-        source.sendFeedback(new TranslatableText("bobby.upgrade.begin"));
+        source.sendFeedback(Text.translatable("bobby.upgrade.begin"));
         new Thread(() -> {
             try {
                 storage.upgrade(world.getRegistryKey(), new ProgressReported(client));
@@ -41,7 +38,7 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
                 source.sendError(Text.of(e.getMessage()));
             }
             client.submit(() -> {
-                source.sendFeedback(new TranslatableText("bobby.upgrade.done"));
+                source.sendFeedback(Text.translatable("bobby.upgrade.done"));
                 bobbyChunkManager.loadMissingChunksFromCache();
             });
         }, "bobby-upgrade").start();
@@ -68,8 +65,8 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
             if (now.isAfter(nextReport)) {
                 nextReport = now.plus(3, ChronoUnit.SECONDS);
 
-                TranslatableText text = new TranslatableText("bobby.upgrade.progress", this.done, this.total);
-                client.submit(() -> client.inGameHud.addChatMessage(MessageType.SYSTEM, text, Util.NIL_UUID));
+                Text text = Text.translatable("bobby.upgrade.progress", this.done, this.total);
+                client.submit(() -> client.inGameHud.getChatHud().addMessage(text));
             }
         }
     }
