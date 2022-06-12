@@ -1,9 +1,9 @@
 plugins {
-	id("fabric-loom") version "0.10-SNAPSHOT"
+	id("fabric-loom") version "0.12.+"
 	id("maven-publish")
 	id("com.github.breadmoirai.github-release") version "2.2.12"
 	id("com.matthewprenger.cursegradle") version "1.4.0"
-	id("com.modrinth.minotaur") version "1.1.0"
+	id("com.modrinth.minotaur") version "2.+"
 	id("elect86.gik") version "0.0.4"
 }
 
@@ -41,8 +41,8 @@ dependencies {
 	include("io.leangen.geantyref:geantyref:$geantyrefVersion")
 	include("com.typesafe:config:$hoconVersion")
 
-	modCompileOnly("com.github.caffeinemc:sodium-fabric:$sodiumVersion")
-	modCompileOnly("com.modrinth.starlight:starlight:$starlightVersion")
+	modCompileOnly("maven.modrinth:sodium:$sodiumVersion")
+	modCompileOnly("maven.modrinth:starlight:$starlightVersion")
 	modCompileOnly("ca.stellardrift:confabricate:$confabricateVersion")
 	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")
 	modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
@@ -96,17 +96,10 @@ repositories {
 			includeGroup("com.terraformersmc")
 		}
 	}
-	ivy {
-		setUrl("https://github.com/CaffeineMC/")
-		patternLayout { artifact("[artifact]/releases/download/[revision]/[artifact]-[revision](+[classifier])(.[ext])") }
-		metadataSources { artifact() }
-		content { includeGroup("com.github.caffeinemc") }
-	}
-	ivy {
-		setUrl("https://cdn.modrinth.com/data/H8CaAYZC/versions/")
-		patternLayout { artifact("Starlight [revision] 1.18.x/[artifact]-[revision](+[classifier])(.[ext])") }
-		metadataSources { artifact() }
-		content { includeGroup("com.modrinth.starlight") }
+	maven("https://api.modrinth.com/maven") {
+		content {
+			includeGroup("maven.modrinth")
+		}
 	}
 }
 
@@ -157,20 +150,24 @@ tasks.withType<com.matthewprenger.cursegradle.CurseUploadTask> {
 	dependsOn(tasks.remapJar)
 }
 
-val publishModrinth by tasks.registering(com.modrinth.minotaur.TaskModrinthUpload::class) {
+tasks.modrinth {
 	dependsOn(tasks.remapJar)
-	token = project.property("modrinth.token") as String
-	projectId = project.property("modrinth.id") as String
-	versionNumber = "${project.version}"
-	uploadFile = tasks.remapJar.flatMap { it.archiveFile }
-	changelog = readChangelog()
-	releaseType = "release"
-	addLoader("fabric")
-	addGameVersion(minecraftVersion)
+}
+
+modrinth {
+	token.set(project.findProperty("modrinth.token") as String? ?: "DUMMY")
+	projectId.set(project.property("modrinth.id") as String)
+	uploadFile.set(tasks.remapJar.get())
+	changelog.set(readChangelog())
+	dependencies {
+		optional.project("9s6osm5g") // Cloth Config
+		optional.project("mOgUt4GM") // Mod Menu
+		optional.project("AANobbMI") // Sodium
+	}
 }
 
 val publishAll by tasks.registering {
 	dependsOn(tasks.curseforge)
 	dependsOn(tasks.githubRelease)
-	dependsOn(publishModrinth)
+	dependsOn(tasks.modrinth)
 }
