@@ -109,6 +109,10 @@ public class FakeChunkManager {
     }
 
     public void update(boolean blocking, BooleanSupplier shouldKeepTicking) {
+        update(blocking, shouldKeepTicking, client.options.viewDistance);
+    }
+
+    private void update(boolean blocking, BooleanSupplier shouldKeepTicking, int newViewDistance) {
         // Once a minute, force chunks to disk
         if (++ticksSinceLastSave > 20 * 60) {
             // completeAll is blocking, so we run it on the io pool
@@ -128,7 +132,6 @@ public class FakeChunkManager {
         ChunkPos playerChunkPos = player.getChunkPos();
         int newCenterX =  playerChunkPos.x;
         int newCenterZ = playerChunkPos.z;
-        int newViewDistance = client.options.viewDistance;
         chunkTracker.update(newCenterX, newCenterZ, newViewDistance, chunkPos -> {
             // Chunk is now outside view distance, can be unloaded / cancelled
             cancelLoad(chunkPos);
@@ -232,13 +235,7 @@ public class FakeChunkManager {
         // We do this by temporarily reducing the client view distance to 0. That will unload all chunks and then try
         // to re-load them (by canceling the unload when they were already loaded, or from the cache when they are
         // missing).
-        int orgViewDistance = client.options.viewDistance;
-        client.options.viewDistance = 0;
-        try {
-            update(false, () -> false);
-        } finally {
-            client.options.viewDistance = orgViewDistance;
-        }
+        update(false, () -> false, 0);
         update(false, () -> false);
     }
 
