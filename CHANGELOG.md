@@ -1,4 +1,4 @@
-### 4.0.0-SNAPSHOT
+### 4.0.0
 - Update to Minecraft 1.19
 
 ### 3.1.1
