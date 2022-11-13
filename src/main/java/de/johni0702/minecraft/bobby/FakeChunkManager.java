@@ -6,6 +6,7 @@ import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -32,7 +33,9 @@ import net.minecraft.world.level.storage.LevelStorage;
 
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Deque;
 import java.util.List;
 import java.util.Optional;
@@ -68,7 +71,7 @@ public class FakeChunkManager {
     // The size of the pool must be sufficiently large such that there is always at least one query operation
     // running, as otherwise the storage io worker will start writing chunks which slows everything down to a crawl.
     private static final ExecutorService loadExecutor = Executors.newFixedThreadPool(8, new DefaultThreadFactory("bobby-loading", true));
-    private final Long2ObjectMap<LoadingJob> loadingJobs = new Long2ObjectOpenHashMap<>();
+    private final Long2ObjectMap<LoadingJob> loadingJobs = new Long2ObjectLinkedOpenHashMap<>();
 
     public FakeChunkManager(ClientWorld world, ClientChunkManager clientChunkManager) {
         this.world = world;
@@ -136,6 +139,7 @@ public class FakeChunkManager {
         BobbyConfig config = Bobby.getInstance().getConfig();
         long time = Util.getMeasuringTimeMs();
 
+        List<LoadingJob> newJobs = new ArrayList<>();
         ChunkPos playerChunkPos = player.getChunkPos();
         int newCenterX =  playerChunkPos.x;
         int newCenterZ = playerChunkPos.z;
@@ -159,10 +163,19 @@ public class FakeChunkManager {
             }
 
             // All good, load it
-            LoadingJob loadingJob = new LoadingJob(x, z);
-            loadingJobs.put(chunkPos, loadingJob);
-            loadExecutor.execute(loadingJob);
+            int distanceX = Math.abs(x - newCenterX);
+            int distanceZ = Math.abs(z - newCenterZ);
+            int distanceSquared = distanceX * distanceX + distanceZ * distanceZ;
+            newJobs.add(new LoadingJob(x, z, distanceSquared));
         });
+
+        if (!newJobs.isEmpty()) {
+            newJobs.sort(LoadingJob.BY_DISTANCE);
+            newJobs.forEach(job -> {
+                loadingJobs.put(ChunkPos.toLong(job.x, job.z), job);
+                loadExecutor.execute(job);
+            });
+        }
 
         // Anything remaining in the set is no longer needed and can now be unloaded
         long unloadTime = time - config.getUnloadDelaySecs() * 1000L;
@@ -349,13 +362,15 @@ public class FakeChunkManager {
     private class LoadingJob implements Runnable {
         private final int x;
         private final int z;
+        private final int distanceSquared;
         private volatile boolean cancelled;
         @SuppressWarnings("OptionalUsedAsFieldOrParameterType") // null while loading, empty() if no chunk was found
         private volatile Optional<Supplier<WorldChunk>> result;
 
-        public LoadingJob(int x, int z) {
+        public LoadingJob(int x, int z, int distanceSquared) {
             this.x = x;
             this.z = z;
+            this.distanceSquared = distanceSquared;
         }
 
         @Override
@@ -379,5 +394,7 @@ public class FakeChunkManager {
         public void complete() {
             result.ifPresent(it -> load(x, z, it.get()));
         }
+
+        public static final Comparator<LoadingJob> BY_DISTANCE = Comparator.comparing(it -> it.distanceSquared);
     }
 }

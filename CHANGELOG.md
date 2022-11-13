@@ -1,4 +1,5 @@
 ### 4.0.1-SNAPSHOT
+- Sort fake chunks before loading so nearby chunks load first
 - Fix render distance resetting after restart if above 32 (#109)
 - Fix errors about Starlight in log when Starlight is not installed
 
