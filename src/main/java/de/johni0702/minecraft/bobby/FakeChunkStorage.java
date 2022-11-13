@@ -88,11 +88,11 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             Blocks.AIR.getDefaultState()
     );
 
-    public static FakeChunkStorage getFor(Path directory, boolean cleanupOnClose) {
+    public static FakeChunkStorage getFor(Path directory, boolean writeable) {
         if (!MinecraftClient.getInstance().isOnThread()) {
             throw new IllegalStateException("Must be called from main thread.");
         }
-        return active.computeIfAbsent(directory, f -> new FakeChunkStorage(directory, cleanupOnClose));
+        return active.computeIfAbsent(directory, f -> new FakeChunkStorage(directory, writeable));
     }
 
     public static void closeAll() {
@@ -111,13 +111,13 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     @Nullable
     private final LastAccessFile lastAccess;
 
-    private FakeChunkStorage(Path directory, boolean cleanupOnClose) {
+    private FakeChunkStorage(Path directory, boolean writeable) {
         super(directory, MinecraftClient.getInstance().getDataFixer(), false);
 
         this.directory = directory;
 
         LastAccessFile lastAccess = null;
-        if (cleanupOnClose) {
+        if (writeable) {
             try {
                 Files.createDirectories(directory);
 
