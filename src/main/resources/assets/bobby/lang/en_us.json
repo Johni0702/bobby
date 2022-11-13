@@ -1,5 +1,6 @@
 {
   "bobby.upgrade.required": "[Bobby] This world contains data from an old version of Minecraft. Run `/bobby upgrade` to upgrade it.",
+  "bobby.upgrade.fallback_world": "[Bobby] Your fallback world contains data from an old version of Minecraft. Upgrade it from the \"Singleplayer\" menu using the \"Edit\" -> \"Optimize World\" option.",
   "bobby.upgrade.not_enabled": "Bobby is not enabled for this world.",
   "bobby.upgrade.begin": "[Bobby] Upgrading world data to current Minecraft version. This may take a few minutes.",
   "bobby.upgrade.progress": "[Bobby] Upgraded %d of (estimated) %d chunks.",
