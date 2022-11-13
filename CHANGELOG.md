@@ -1,5 +1,6 @@
 ### 4.0.1-SNAPSHOT
 - Fix render distance resetting after restart if above 32 (#109)
+- Fix errors about Starlight in log when Starlight is not installed
 
 ### 4.0.0
 - Update to Minecraft 1.19

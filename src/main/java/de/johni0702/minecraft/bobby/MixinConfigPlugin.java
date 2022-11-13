@@ -10,6 +10,7 @@ import java.util.Set;
 
 public class MixinConfigPlugin implements IMixinConfigPlugin {
     private final boolean hasSodium = FabricLoader.getInstance().isModLoaded("sodium");
+    private final boolean hasStarlight = FabricLoader.getInstance().isModLoaded("starlight");
 
     @Override
     public void onLoad(String mixinPackage) {
@@ -22,6 +23,9 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
+        if (!hasStarlight && targetClassName.startsWith("ca.spottedleaf.starlight.")) {
+            return false;
+        }
         if (mixinClassName.contains(".sodium.")) {
             return hasSodium;
         }
