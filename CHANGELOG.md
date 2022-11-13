@@ -1,4 +1,5 @@
 ### 4.0.1-SNAPSHOT
+- Fix render distance resetting after restart if above 32 (#109)
 
 ### 4.0.0
 - Update to Minecraft 1.19
