@@ -7,7 +7,6 @@ import net.minecraft.SharedConstants;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
-import net.minecraft.class_7522;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
@@ -30,6 +29,7 @@ import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.PalettedContainer;
+import net.minecraft.world.chunk.ReadableContainer;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
@@ -81,7 +81,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             }
         }
     }
-    private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.method_44343(
+    private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.createPalettedContainerCodec(
             Block.STATE_IDS,
             BlockState.CODEC,
             PalettedContainer.PaletteProvider.BLOCK_STATE,
@@ -177,7 +177,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
     public NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
         Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<class_7522<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.method_44347(
+        Codec<ReadableContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createReadableContainerCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
@@ -260,7 +260,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         }
 
         Registry<Biome> biomeRegistry = world.getRegistryManager().get(Registry.BIOME_KEY);
-        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.method_44343(
+        Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createPalettedContainerCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
