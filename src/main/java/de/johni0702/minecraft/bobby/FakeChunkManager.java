@@ -19,7 +19,6 @@ import net.minecraft.client.world.ClientWorld;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.server.integrated.IntegratedServer;
 import net.minecraft.util.Identifier;
-import net.minecraft.util.Pair;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
@@ -30,6 +29,7 @@ import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
 import net.minecraft.world.level.storage.LevelStorage;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -72,6 +72,9 @@ public class FakeChunkManager {
     // running, as otherwise the storage io worker will start writing chunks which slows everything down to a crawl.
     private static final ExecutorService loadExecutor = Executors.newFixedThreadPool(8, new DefaultThreadFactory("bobby-loading", true));
     private final Long2ObjectMap<LoadingJob> loadingJobs = new Long2ObjectLinkedOpenHashMap<>();
+
+    // Executor for serialization and saving. Single-threaded so we do not have to worry about races between multiple saves for the same chunk.
+    private static final ExecutorService saveExecutor = Executors.newSingleThreadExecutor(new DefaultThreadFactory("bobby-saving", true));
 
     public FakeChunkManager(ClientWorld world, ClientChunkManager clientChunkManager) {
         this.world = world;
@@ -147,7 +150,7 @@ public class FakeChunkManager {
             // Chunk is now outside view distance, can be unloaded / cancelled
             cancelLoad(chunkPos);
             toBeUnloaded.put(chunkPos, time);
-            unloadQueue.add(new Pair<>(chunkPos, time));
+            unloadQueue.add(Pair.of(chunkPos, time));
         }, chunkPos -> {
             // Chunk is now inside view distance, load it
             int x = ChunkPos.getPackedX(chunkPos);
@@ -271,7 +274,7 @@ public class FakeChunkManager {
         FakeChunkStorage storage = storages.get(storageIndex);
         return storage.loadTag(chunkPos).thenCompose(maybeTag -> {
             if (maybeTag.isPresent()) {
-                return CompletableFuture.completedFuture(Optional.of(new Pair<>(maybeTag.get(), storage)));
+                return CompletableFuture.completedFuture(Optional.of(Pair.of(maybeTag.get(), storage)));
             }
             if (storageIndex + 1 < storages.size()) {
                 return loadTag(chunkPos, storageIndex + 1);
@@ -280,15 +283,7 @@ public class FakeChunkManager {
         });
     }
 
-    public void load(int x, int z, NbtCompound tag, FakeChunkStorage storage) {
-        Supplier<WorldChunk> chunkSupplier = storage.deserialize(new ChunkPos(x, z), tag, world);
-        if (chunkSupplier == null) {
-            return;
-        }
-        load(x, z, chunkSupplier.get());
-    }
-
-    protected void load(int x, int z, WorldChunk chunk) {
+    public void load(int x, int z, WorldChunk chunk) {
         fakeChunks.put(ChunkPos.toLong(x, z), chunk);
 
         world.resetChunkColor(new ChunkPos(x, z));
@@ -330,6 +325,16 @@ public class FakeChunkManager {
         if (loadingJob != null) {
             loadingJob.cancelled = true;
         }
+    }
+
+    public Supplier<WorldChunk> save(WorldChunk chunk) {
+        Pair<WorldChunk, Supplier<WorldChunk>> copy = storage.shallowCopy(chunk);
+        LightingProvider lightingProvider = chunk.getWorld().getLightingProvider();
+        saveExecutor.execute(() -> {
+            NbtCompound nbt = storage.serialize(copy.getLeft(), lightingProvider);
+            storage.save(chunk.getPos(), nbt);
+        });
+        return copy.getRight();
     }
 
     private static String getCurrentWorldOrServerName() {

@@ -36,6 +36,7 @@ import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.FlatChunkGenerator;
 import net.minecraft.world.storage.StorageIoWorker;
 import net.minecraft.world.storage.VersionedChunkStorage;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -210,13 +211,17 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 empty = false;
             }
 
-            ChunkNibbleArray blockLight = lightingProvider.get(LightType.BLOCK).getLightSection(ChunkSectionPos.from(chunkPos, y));
+            ChunkNibbleArray blockLight = chunk instanceof FakeChunk fakeChunk
+                    ? fakeChunk.blockLight[i + 1]
+                    : lightingProvider.get(LightType.BLOCK).getLightSection(ChunkSectionPos.from(chunkPos, y));
             if (blockLight != null && !blockLight.isUninitialized()) {
                 sectionTag.putByteArray("BlockLight", blockLight.asByteArray());
                 empty = false;
             }
 
-            ChunkNibbleArray skyLight = lightingProvider.get(LightType.SKY).getLightSection(ChunkSectionPos.from(chunkPos, y));
+            ChunkNibbleArray skyLight = chunk instanceof FakeChunk fakeChunk
+                    ? fakeChunk.skyLight[i + 1]
+                    : lightingProvider.get(LightType.SKY).getLightSection(ChunkSectionPos.from(chunkPos, y));
             if (skyLight != null && !skyLight.isUninitialized()) {
                 sectionTag.putByteArray("SkyLight", skyLight.asByteArray());
                 empty = false;
@@ -229,11 +234,16 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
         level.put("sections", sectionsTag);
 
-        NbtList blockEntitiesTag = new NbtList();
-        for (BlockPos pos : chunk.getBlockEntityPositions()) {
-            NbtCompound blockEntityTag = chunk.getPackedBlockEntityNbt(pos);
-            if (blockEntityTag != null) {
-                blockEntitiesTag.add(blockEntityTag);
+        NbtList blockEntitiesTag;
+        if (chunk instanceof FakeChunk fakeChunk) {
+            blockEntitiesTag = fakeChunk.serializedBlockEntities;
+        } else {
+            blockEntitiesTag = new NbtList();
+            for (BlockPos pos : chunk.getBlockEntityPositions()) {
+                NbtCompound blockEntityTag = chunk.getPackedBlockEntityNbt(pos);
+                if (blockEntityTag != null) {
+                    blockEntitiesTag.add(blockEntityTag);
+                }
             }
         }
         level.put("block_entities", blockEntitiesTag);
@@ -379,7 +389,20 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             }
         }
 
+        return loadChunk(chunk, blockLight, skyLight, config);
+    }
+
+    private Supplier<WorldChunk> loadChunk(
+            FakeChunk chunk,
+            ChunkNibbleArray[] blockLight,
+            ChunkNibbleArray[] skyLight,
+            BobbyConfig config
+    ) {
         return () -> {
+            ChunkPos pos = chunk.getPos();
+            World world = chunk.getWorld();
+            ChunkSection[] chunkSections = chunk.getSectionArray();
+
             boolean hasSkyLight = world.getDimension().hasSkyLight();
             ChunkManager chunkManager = world.getChunkManager();
             LightingProvider lightingProvider = chunkManager.getLightingProvider();
@@ -412,6 +435,49 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
             return chunk;
         };
+    }
+
+    // This method is called before the original chunk is unloaded and needs to return a supplier
+    // that can be called after the chunk has been unloaded to load a fake chunk in its place.
+    // It also returns a fake chunk immediately that isn't loaded into the game (yet) but can safely
+    // be serialized on another thread.
+    public Pair<WorldChunk, Supplier<WorldChunk>> shallowCopy(WorldChunk original) {
+        BobbyConfig config = Bobby.getInstance().getConfig();
+
+        World world = original.getWorld();
+        ChunkPos chunkPos = original.getPos();
+
+        ChunkSection[] chunkSections = original.getSectionArray();
+
+        ChunkNibbleArray[] blockLight = new ChunkNibbleArray[chunkSections.length + 2];
+        ChunkNibbleArray[] skyLight = new ChunkNibbleArray[chunkSections.length + 2];
+        LightingProvider lightingProvider = world.getChunkManager().getLightingProvider();
+        for (int y = lightingProvider.getBottomY(), i = 0; y < lightingProvider.getTopY(); y++, i++) {
+            blockLight[i] = lightingProvider.get(LightType.BLOCK).getLightSection(ChunkSectionPos.from(chunkPos, y));
+            skyLight[i] = lightingProvider.get(LightType.SKY).getLightSection(ChunkSectionPos.from(chunkPos, y));
+        }
+
+        FakeChunk fake = new FakeChunk(world, chunkPos, chunkSections);
+        fake.blockLight = blockLight;
+        fake.skyLight = skyLight;
+
+        for (Map.Entry<Heightmap.Type, Heightmap> entry : original.getHeightmaps()) {
+            fake.setHeightmap(entry.getKey(), entry.getValue());
+        }
+
+        NbtList blockEntitiesTag = new NbtList();
+        for (BlockPos pos : original.getBlockEntityPositions()) {
+            NbtCompound blockEntityTag = original.getPackedBlockEntityNbt(pos);
+            if (blockEntityTag != null) {
+                blockEntitiesTag.add(blockEntityTag);
+                if (!config.isNoBlockEntities()) {
+                    fake.addPendingBlockEntityNbt(blockEntityTag);
+                }
+            }
+        }
+        fake.serializedBlockEntities = blockEntitiesTag;
+
+        return Pair.of(fake, loadChunk(fake, blockLight, skyLight, config));
     }
 
     private static ChunkNibbleArray floodSkylightFromAbove(ChunkNibbleArray above) {

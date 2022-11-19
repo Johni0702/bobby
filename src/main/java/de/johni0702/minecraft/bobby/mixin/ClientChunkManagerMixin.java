@@ -3,7 +3,6 @@ package de.johni0702.minecraft.bobby.mixin;
 import de.johni0702.minecraft.bobby.Bobby;
 import de.johni0702.minecraft.bobby.FakeChunk;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
-import de.johni0702.minecraft.bobby.FakeChunkStorage;
 import de.johni0702.minecraft.bobby.VisibleChunksTracker;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.minecraft.client.world.ClientChunkManager;
@@ -14,7 +13,6 @@ import net.minecraft.network.packet.s2c.play.ChunkData;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
-import net.minecraft.world.chunk.light.LightingProvider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
@@ -29,13 +27,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Mixin(ClientChunkManager.class)
 public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
     @Shadow @Final private WorldChunk emptyChunk;
 
     @Shadow @Nullable public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
-    @Shadow public abstract LightingProvider getLightingProvider();
     @Shadow private static int getChunkMapRadius(int loadDistance) { throw new AssertionError(); }
 
     protected FakeChunkManager bobbyChunkManager;
@@ -45,7 +43,7 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
     private final VisibleChunksTracker realChunksTracker = new VisibleChunksTracker();
 
     // List of real chunks saved just before they are unloaded, so we can restore fake ones in their place afterwards
-    private final List<Pair<Long, NbtCompound>> bobbyChunkReplacements = new ArrayList<>();
+    private final List<Pair<Long, Supplier<WorldChunk>>> bobbyChunkReplacements = new ArrayList<>();
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void bobbyInit(ClientWorld world, int loadDistance, CallbackInfo ci) {
@@ -111,12 +109,10 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             return;
         }
 
-        FakeChunkStorage storage = bobbyChunkManager.getStorage();
-        NbtCompound tag = storage.serialize(chunk, getLightingProvider());
-        storage.save(chunk.getPos(), tag);
+        Supplier<WorldChunk> copy = bobbyChunkManager.save(chunk);
 
         if (bobbyChunkManager.shouldBeLoaded(chunkX, chunkZ)) {
-            bobbyChunkReplacements.add(Pair.of(chunkPos, tag));
+            bobbyChunkReplacements.add(Pair.of(chunkPos, copy));
 
             bobby_pauseChunkStatusListener();
         }
@@ -124,11 +120,11 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
 
     @Unique
     private void substituteFakeChunksForUnloadedRealOnes() {
-        for (Pair<Long, NbtCompound> entry : bobbyChunkReplacements) {
+        for (Pair<Long, Supplier<WorldChunk>> entry : bobbyChunkReplacements) {
             long chunkPos = entry.getKey();
             int chunkX = ChunkPos.getPackedX(chunkPos);
             int chunkZ = ChunkPos.getPackedZ(chunkPos);
-            bobbyChunkManager.load(chunkX, chunkZ, entry.getValue(), bobbyChunkManager.getStorage());
+            bobbyChunkManager.load(chunkX, chunkZ, entry.getValue().get());
         }
         bobbyChunkReplacements.clear();
 

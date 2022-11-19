@@ -3,10 +3,13 @@ package de.johni0702.minecraft.bobby;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.WorldRenderer;
+import net.minecraft.nbt.NbtList;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.UpgradeData;
 import net.minecraft.world.chunk.WorldChunk;
@@ -17,6 +20,11 @@ import net.minecraft.world.tick.ChunkTickScheduler;
 public class FakeChunk extends WorldChunk {
 
     private boolean isTainted;
+
+    // Keeping these around, so we can safely serialize the chunk from any thread
+    public ChunkNibbleArray[] blockLight;
+    public ChunkNibbleArray[] skyLight;
+    public NbtList serializedBlockEntities;
 
     public FakeChunk(World world, ChunkPos pos, ChunkSection[] sections) {
         super(world, pos, UpgradeData.NO_UPGRADE_DATA, new ChunkTickScheduler<>(), new ChunkTickScheduler<>(), 0L, sections, null, null);
@@ -53,5 +61,9 @@ public class FakeChunk extends WorldChunk {
             return;
         }
         lightProvider.bobby_setTainted(ChunkSectionPos.asLong(x, y, z), delta);
+    }
+
+    public void setHeightmap(Heightmap.Type type, Heightmap heightmap) {
+        this.heightmaps.put(type, heightmap);
     }
 }
