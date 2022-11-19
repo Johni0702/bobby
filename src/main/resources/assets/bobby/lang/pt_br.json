@@ -1,0 +1,23 @@
+{
+    "bobby.upgrade.required": "[Bobby] Este mundo contém dados de uma versão antiga do Minecraft. Execute `/bobby upgrade` para atualizá-lo.",
+    "bobby.upgrade.fallback_world": "[Bobby] Seu mundo alternativo contém dados de uma versão antiga do Minecraft. Atualize-o no menu \"Singleplayer\" usando a opção \"Editar\" -> \"Otimizar Mundo\".",
+    "bobby.upgrade.not_enabled": "Bobby não está habilitado para este mundo.",
+    "bobby.upgrade.begin": "[Bobby] Atualizando os dados do mundo para a versão atual do Minecraft. Isso pode levar alguns minutos.",
+    "bobby.upgrade.progress": "[Bobby] Atualizado %d de (estimado) %d blocos.",
+    "bobby.upgrade.done": "[Bobby] Atualização de dados mundiais concluída. Seus pedaços antigos agora devem estar visíveis novamente.",
+  
+    "title.bobby.config": "Bobby Configuração",
+    "option.bobby.enabled": "Habilitado",
+    "option.bobby.no_block_entities": "Desabilitar Blocos de Entidades",
+    "tooltip.option.bobby.no_block_entities": "Não carregue blocos de entidades (por exemplo, baús) em chunks falsos.\nEles precisam ser atualizados a cada tick que pode somar.\n\nAtivado por padrão porque a distância de renderização para entidades de bloco é geralmente menor que a distância de exibição do servidor de qualquer maneira.",
+    "option.bobby.taint_fake_chunks": "Cortar Chunks Falsas",
+    "tooltip.option.bobby.taint_fake_chunks": "Reduz os níveis de luz em chunks falsas para que você possa diferenciar dos reais.",
+    "option.bobby.unload_delay": "Atraso de descarregamento de pedaços (segundos)",
+    "tooltip.option.bobby.unload_delay": "Atrasa o descarregamento de blocos que estão fora de sua distância de visão.\nEvita que você precise recarregar todos os blocos ao\nsair de uma área por um breve momento (por exemplo, cenas cortadas).\nNão funciona entre dimensões.",
+    "option.bobby.delete_unused_regions_after_days": "Limpar regiões não utilizadas (dias)",
+    "tooltip.option.bobby.delete_unused_regions_after_days": "Exclua regiões do cache quando elas não forem carregadas por X dias.\n\nO cache de um determinado mundo é limpo sempre que você se desconecta do servidor.\nMundos inteiros são limpos quando o jogo começa e você não os visitou por X dias.\n\nDefina como -1 para desabilitar.\nDefina como 0 para limpar tudo após cada desconexão.",
+    "option.bobby.max_render_distance": "Distância máxima de renderização",
+    "tooltip.option.bobby.max_render_distance": "Altera o valor máximo configurável para Render Distance.\n\nRequer Sodium.",
+    "option.bobby.view_distance_overwrite": "Distância de visualização do servidor para o Singleplayer",
+    "tooltip.option.bobby.view_distance_overwrite": "Substitui a distância de visualização do servidor integrado.\nIsso permite que Bobby seja útil no modo Singleplayer.\n\nDesativado quando em 0.\nBobby está ativo no modo singleplayer apenas se estiver ativado.\nRequer novo login para desativar/desativar."
+  }

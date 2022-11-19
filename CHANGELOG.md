@@ -1,5 +1,6 @@
 ### 4.0.4-SNAPSHOT
 - Update to Minecraft 1.19.4
+- Add Brazilian Portuguese translations
 
 ### 4.0.3
 - Fix server address detection on 1.19.3.
