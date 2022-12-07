@@ -1,3 +1,5 @@
+### 4.0.2-SNAPSHOT
+
 ### 4.0.1
 - Sort fake chunks before loading so nearby chunks load first
 - Fix render distance resetting after restart if above 32 (#109)
