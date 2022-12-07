@@ -13,13 +13,15 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLongArray;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.registry.Registries;
+import net.minecraft.registry.Registry;
+import net.minecraft.registry.RegistryKey;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.util.registry.RegistryEntry;
-import net.minecraft.util.registry.RegistryKey;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
@@ -179,7 +181,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     }
 
     public NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
-        Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(Registry.BIOME_KEY);
+        Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(RegistryKeys.BIOME);
         Codec<ReadableContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createReadableContainerCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
@@ -271,7 +273,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
             LOGGER.error("Chunk file at {} is in the wrong location; relocating. (Expected {}, got {})", pos, pos, chunkPos);
         }
 
-        Registry<Biome> biomeRegistry = world.getRegistryManager().get(Registry.BIOME_KEY);
+        Registry<Biome> biomeRegistry = world.getRegistryManager().get(RegistryKeys.BIOME);
         Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createPalettedContainerCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.createEntryCodec(),
@@ -498,7 +500,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
     public void upgrade(RegistryKey<World> worldKey, BiConsumer<Integer, Integer> progress) throws IOException {
         Optional<RegistryKey<Codec<? extends ChunkGenerator>>> generatorKey =
-                Optional.of(Registry.CHUNK_GENERATOR.getKey(FlatChunkGenerator.CODEC).orElseThrow());
+                Optional.of(Registries.CHUNK_GENERATOR.getKey(FlatChunkGenerator.CODEC).orElseThrow());
 
         List<ChunkPos> chunks;
         try (Stream<Path> stream = Files.list(directory)) {

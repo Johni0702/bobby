@@ -1,4 +1,5 @@
 ### 4.0.2-SNAPSHOT
+- Update to Minecraft 1.19.3
 
 ### 4.0.1
 - Sort fake chunks before loading so nearby chunks load first
