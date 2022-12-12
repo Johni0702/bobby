@@ -3,6 +3,7 @@ package de.johni0702.minecraft.bobby;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
+import de.johni0702.minecraft.bobby.mixin.ClientWorldAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
@@ -12,6 +13,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.network.ClientPlayNetworkHandler;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.client.network.ServerInfo;
 import net.minecraft.client.world.ClientChunkManager;
@@ -87,7 +89,7 @@ public class FakeChunkManager {
         Path storagePath = client.runDirectory
                 .toPath()
                 .resolve(".bobby")
-                .resolve(getCurrentWorldOrServerName())
+                .resolve(getCurrentWorldOrServerName(((ClientWorldAccessor) world).getNetworkHandler()))
                 .resolve(seedHash + "")
                 .resolve(worldId.getNamespace())
                 .resolve(worldId.getPath());
@@ -337,7 +339,7 @@ public class FakeChunkManager {
         return copy.getRight();
     }
 
-    private static String getCurrentWorldOrServerName() {
+    private static String getCurrentWorldOrServerName(ClientPlayNetworkHandler networkHandler) {
         IntegratedServer integratedServer = client.getServer();
         if (integratedServer != null) {
             return integratedServer.getSaveProperties().getLevelName();
@@ -348,7 +350,7 @@ public class FakeChunkManager {
             return "realms";
         }
 
-        ServerInfo serverInfo = client.getCurrentServerEntry();
+        ServerInfo serverInfo = networkHandler.getServerInfo();
         if (serverInfo != null) {
             return serverInfo.address.replace(':', '_');
         }
