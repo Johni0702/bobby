@@ -3,7 +3,7 @@
   "id": "bobby",
   "version": "${version}",
 
-  "name": "Bobby",
+  "name": "Booby",
   "description": "Allows for render distances greater than the server's view-distance setting.",
   "authors": [
     "johni0702"
