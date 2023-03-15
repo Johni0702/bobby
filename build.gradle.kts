@@ -1,5 +1,5 @@
 plugins {
-	id("fabric-loom") version "0.12.+"
+	id("fabric-loom") version "1.1-SNAPSHOT"
 	id("maven-publish")
 	id("com.github.breadmoirai.github-release") version "2.2.12"
 	id("com.matthewprenger.cursegradle") version "1.4.0"
