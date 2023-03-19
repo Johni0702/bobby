@@ -1,3 +1,5 @@
+### 4.0.4-SNAPSHOT
+
 ### 4.0.3
 - Fix server address detection on 1.19.3.
   Prior to this fix, all multiplayer worlds were saved as "unknown". If you have already explored a lot using 4.0.2, you can rename the folder in `.minecraft/.bobby/`.
