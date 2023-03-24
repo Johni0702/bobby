@@ -302,6 +302,8 @@ public class FakeChunkManager {
         cancelLoad(chunkPos);
         WorldChunk chunk = fakeChunks.remove(chunkPos);
         if (chunk != null) {
+            chunk.clear();
+
             LightingProvider lightingProvider = clientChunkManager.getLightingProvider();
             ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
             ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));

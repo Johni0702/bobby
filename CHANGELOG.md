@@ -1,4 +1,5 @@
 ### 4.0.5-SNAPSHOT
+- Fix unloading of block entities without "Disable Block Entities" (#142)
 
 ### 4.0.4
 - Update to Minecraft 1.19.4
