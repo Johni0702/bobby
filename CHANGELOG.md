@@ -1,3 +1,5 @@
+### 4.0.5-SNAPSHOT
+
 ### 4.0.4
 - Update to Minecraft 1.19.4
 - Add Brazilian Portuguese translations
