@@ -8,6 +8,7 @@
     "BiomeAccessAccessor",
     "ChunkLightProviderMixin",
     "ClientChunkManagerMixin",
+    "ClientSettingsC2SPacketMixin",
     "ClientWorldAccessor",
     "GameOptionsMixin",
     "GameRendererMixin",
