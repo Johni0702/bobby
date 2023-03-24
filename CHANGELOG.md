@@ -1,5 +1,6 @@
 ### 4.0.5-SNAPSHOT
 - Fix unloading of block entities without "Disable Block Entities" (#142)
+- Fix crash when Sodium chunk_rendering mixins are disabled (#143)
 
 ### 4.0.4
 - Update to Minecraft 1.19.4
