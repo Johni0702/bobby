@@ -76,6 +76,7 @@ public class ChunkSerializer {
         level.putInt("xPos", chunkPos.x);
         level.putInt("yPos", chunk.getBottomSectionCoord());
         level.putInt("zPos", chunkPos.z);
+        level.putBoolean("isLightOn", true);
 
         ChunkSection[] chunkSections = chunk.getSectionArray();
         NbtList sectionsTag = new NbtList();

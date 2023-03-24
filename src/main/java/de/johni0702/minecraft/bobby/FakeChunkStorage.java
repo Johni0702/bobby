@@ -175,6 +175,10 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                         return;
                     }
 
+                    // Didn't have this set prior to Bobby 4.0.5 and upgrading from 1.18 to 1.19 wipes light data
+                    // from chunks that don't have this set, so we need to set it before we upgrade the chunk.
+                    nbt.putBoolean("isLightOn", true);
+
                     nbt = updateChunkNbt(worldKey, null, nbt, generatorKey);
 
                     io.setResult(chunkPos, nbt).join();
