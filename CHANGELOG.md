@@ -1,5 +1,6 @@
 ### 4.0.6-SNAPSHOT
 - Fix sky fog rendering incorrectly as render distance goes beyond 32 (#152)
+- Fix world not loading when `last_access` file has become corrupted (#92)
 
 ### 4.0.5
 - Fix unloading of block entities without "Disable Block Entities" (#142)

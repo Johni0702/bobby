@@ -45,7 +45,11 @@ public class LastAccessFile implements Closeable {
 
     public LastAccessFile(Path directory) throws IOException {
         this.path = directory.resolve(FILE_NAME);
-        this.accessMap = read(path);
+        try {
+            this.accessMap = read(path);
+        } catch (Exception e) {
+            throw new IOException("Error parsing " + path, e);
+        }
 
         if (Files.notExists(path)) {
             try (Stream<Path> stream = Files.list(directory)) {
