@@ -1,4 +1,5 @@
 ### 4.0.6-SNAPSHOT
+- Fix sky fog rendering incorrectly as render distance goes beyond 32 (#152)
 
 ### 4.0.5
 - Fix unloading of block entities without "Disable Block Entities" (#142)

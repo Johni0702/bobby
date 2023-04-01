@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_17",
   "plugin": "de.johni0702.minecraft.bobby.MixinConfigPlugin",
   "client": [
+    "BackgroundRendererMixin",
     "BiomeAccessAccessor",
     "ChunkLightProviderMixin",
     "ClientChunkManagerMixin",
@@ -16,6 +17,7 @@
     "MinecraftClientMixin",
     "SimpleOptionAccessor",
     "ValidatingIntSliderCallbacksAccessor",
+    "WorldRendererMixin",
     "sodium.SodiumChunkManagerMixin",
     "sodium.SodiumClientPlayNetworkHandlerMixin",
     "sodium.SodiumGameOptionPagesMixin"
