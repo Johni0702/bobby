@@ -1,6 +1,7 @@
 package de.johni0702.minecraft.bobby;
 
 import com.mojang.serialization.Codec;
+import de.johni0702.minecraft.bobby.util.RegionPos;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
@@ -133,21 +134,23 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         return nbt;
     }
 
-    public void upgrade(RegistryKey<World> worldKey, BiConsumer<Integer, Integer> progress) throws IOException {
-        Optional<RegistryKey<Codec<? extends ChunkGenerator>>> generatorKey =
-                Optional.of(Registries.CHUNK_GENERATOR.getKey(FlatChunkGenerator.CODEC).orElseThrow());
-
-        List<ChunkPos> chunks;
+    public static List<RegionPos> getRegions(Path directory) throws IOException {
         try (Stream<Path> stream = Files.list(directory)) {
-            chunks = stream
+            return stream
                     .map(Path::getFileName)
                     .map(Path::toString)
                     .map(REGION_FILE_PATTERN::matcher)
                     .filter(Matcher::matches)
                     .map(it -> new RegionPos(Integer.parseInt(it.group(1)), Integer.parseInt(it.group(2))))
-                    .flatMap(RegionPos::getContainedChunks)
                     .collect(Collectors.toList());
         }
+    }
+
+    public void upgrade(RegistryKey<World> worldKey, BiConsumer<Integer, Integer> progress) throws IOException {
+        Optional<RegistryKey<Codec<? extends ChunkGenerator>>> generatorKey =
+                Optional.of(Registries.CHUNK_GENERATOR.getKey(FlatChunkGenerator.CODEC).orElseThrow());
+
+        List<ChunkPos> chunks = getRegions(directory).stream().flatMap(RegionPos::getContainedChunks).toList();
 
         AtomicInteger done = new AtomicInteger();
         AtomicInteger total = new AtomicInteger(chunks.size());
@@ -198,19 +201,5 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         }
 
         progress.accept(done.get(), total.get());
-    }
-
-    private record RegionPos(int x, int z) {
-        public Stream<ChunkPos> getContainedChunks() {
-            int baseX = x << 5;
-            int baseZ = z << 5;
-            ChunkPos[] result = new ChunkPos[32 * 32];
-            for (int x = 0; x < 32; x++) {
-                for (int z = 0; z < 32; z++) {
-                    result[x * 32 + z] = new ChunkPos(baseX + x, baseZ + z);
-                }
-            }
-            return Stream.of(result);
-        }
     }
 }
