@@ -269,15 +269,15 @@ public class FakeChunkManager {
         return chunkTracker.isInViewDistance(x, z);
     }
 
-    private CompletableFuture<Optional<Pair<NbtCompound, FakeChunkStorage>>> loadTag(int x, int z) {
+    private CompletableFuture<Optional<NbtCompound>> loadTag(int x, int z) {
         return loadTag(new ChunkPos(x, z), 0);
     }
 
-    private CompletableFuture<Optional<Pair<NbtCompound, FakeChunkStorage>>> loadTag(ChunkPos chunkPos, int storageIndex) {
+    private CompletableFuture<Optional<NbtCompound>> loadTag(ChunkPos chunkPos, int storageIndex) {
         FakeChunkStorage storage = storages.get(storageIndex);
         return storage.loadTag(chunkPos).thenCompose(maybeTag -> {
             if (maybeTag.isPresent()) {
-                return CompletableFuture.completedFuture(Optional.of(Pair.of(maybeTag.get(), storage)));
+                return CompletableFuture.completedFuture(maybeTag);
             }
             if (storageIndex + 1 < storages.size()) {
                 return loadTag(chunkPos, storageIndex + 1);
@@ -390,7 +390,7 @@ public class FakeChunkManager {
             if (cancelled) {
                 return;
             }
-            Optional<Pair<NbtCompound, FakeChunkStorage>> value;
+            Optional<NbtCompound> value;
             try {
                 value = loadTag(x, z).get();
             } catch (InterruptedException | ExecutionException e) {
@@ -400,7 +400,7 @@ public class FakeChunkManager {
             if (cancelled) {
                 return;
             }
-            result = value.map(it -> ChunkSerializer.deserialize(new ChunkPos(x, z), it.getLeft(), world));
+            result = value.map(it -> ChunkSerializer.deserialize(new ChunkPos(x, z), it, world));
         }
 
         public void complete() {
