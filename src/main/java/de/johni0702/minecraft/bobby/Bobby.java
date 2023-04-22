@@ -3,7 +3,10 @@ package de.johni0702.minecraft.bobby;
 import ca.stellardrift.confabricate.Confabricate;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
+import de.johni0702.minecraft.bobby.commands.CreateWorldCommand;
+import de.johni0702.minecraft.bobby.commands.MergeWorldsCommand;
 import de.johni0702.minecraft.bobby.commands.UpgradeCommand;
+import de.johni0702.minecraft.bobby.commands.WorldsCommand;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import de.johni0702.minecraft.bobby.mixin.SimpleOptionAccessor;
 import de.johni0702.minecraft.bobby.mixin.ValidatingIntSliderCallbacksAccessor;
@@ -32,6 +35,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static com.mojang.brigadier.arguments.IntegerArgumentType.integer;
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 public class Bobby implements ClientModInitializer {
@@ -63,6 +68,14 @@ public class Bobby implements ClientModInitializer {
 
         ClientCommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess) ->
                 dispatcher.register(literal("bobby")
+                        .then(literal("worlds").executes(new WorldsCommand(false))
+                                .then(literal("full").executes(new WorldsCommand(true)))
+                                .then(literal("merge")
+                                        .then(argument("source", integer())
+                                                .then(argument("target", integer())
+                                                        .executes(new MergeWorldsCommand()))))
+                                .then(literal("create").executes(new CreateWorldCommand()))
+                        )
                         .then(literal("upgrade").executes(new UpgradeCommand())))));
 
         FlawlessFrames.onClientInitialization();

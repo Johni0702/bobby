@@ -97,6 +97,8 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         bobby_onFakeChunkAdded(x, z);
 
         bobby_resumeChunkStatusListener();
+
+        bobbyChunkManager.fingerprint(cir.getReturnValue());
     }
 
     @Unique

@@ -2,7 +2,7 @@
   "bobby.upgrade.required": "[Bobby] 这个世界包含来自旧版Minecraft的数据，运行/bobby upgrade进行升级",
   "bobby.upgrade.not_enabled": "Bobby 此世界未启用",
   "bobby.upgrade.begin": "[Bobby] 将世界数据升级到当前的Minecraft版本，这可能需要几分钟",
-  "bobby.upgrade.progress": "[Bobby] 已升级 %d 中的 %d 个区块",
+  "bobby.upgrade.progress": "[Bobby] 已升级 %d 中的 %d 个区块 (world %d of %d)",
   "bobby.upgrade.done": "[Bobby] 世界数据升级完成",
 
   "title.bobby.config": "Bobby 配置",

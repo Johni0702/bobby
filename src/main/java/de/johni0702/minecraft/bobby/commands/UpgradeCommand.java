@@ -4,6 +4,7 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.context.CommandContext;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
+import de.johni0702.minecraft.bobby.Worlds;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.MinecraftClient;
@@ -14,6 +15,7 @@ import net.minecraft.text.Text;
 import java.io.IOException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.function.BiConsumer;
 
 public class UpgradeCommand implements Command<FabricClientCommandSource> {
@@ -27,15 +29,28 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
         if (bobbyChunkManager == null) {
             throw new CommandException(Text.translatable("bobby.upgrade.not_enabled"));
         }
-        FakeChunkStorage storage = bobbyChunkManager.getStorage();
+
+        Worlds worlds = bobbyChunkManager.getWorlds();
+        List<FakeChunkStorage> storages;
+        if (worlds != null) {
+            storages = worlds.getOutdatedWorlds();
+        } else {
+            storages = List.of(bobbyChunkManager.getStorage());
+        }
 
         source.sendFeedback(Text.translatable("bobby.upgrade.begin"));
         new Thread(() -> {
-            try {
-                storage.upgrade(world.getRegistryKey(), new ProgressReported(client));
-            } catch (IOException e) {
-                e.printStackTrace();
-                source.sendError(Text.of(e.getMessage()));
+            for (int i = 0; i < storages.size(); i++) {
+                FakeChunkStorage storage = storages.get(i);
+                try {
+                    storage.upgrade(world.getRegistryKey(), new ProgressReported(client, i, storages.size()));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    source.sendError(Text.of(e.getMessage()));
+                }
+                if (worlds != null) {
+                    worlds.markAsUpToDate(storage);
+                }
             }
             client.submit(() -> {
                 source.sendFeedback(Text.translatable("bobby.upgrade.done"));
@@ -48,12 +63,16 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
 
     private static class ProgressReported implements BiConsumer<Integer, Integer> {
         private final MinecraftClient client;
+        private final int worldIndex;
+        private final int totalWorlds;
         private Instant nextReport = Instant.MIN;
         private int done;
         private int total = Integer.MAX_VALUE;
 
-        public ProgressReported(MinecraftClient client) {
+        public ProgressReported(MinecraftClient client, int worldIndex, int totalWorlds) {
             this.client = client;
+            this.worldIndex = worldIndex;
+            this.totalWorlds = totalWorlds;
         }
 
         @Override
@@ -62,10 +81,10 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
             this.total = Math.min(this.total, total);
 
             Instant now = Instant.now();
-            if (now.isAfter(nextReport)) {
+            if (now.isAfter(nextReport) || this.done == this.total) {
                 nextReport = now.plus(3, ChronoUnit.SECONDS);
 
-                Text text = Text.translatable("bobby.upgrade.progress", this.done, this.total);
+                Text text = Text.translatable("bobby.upgrade.progress", this.done, this.total, this.worldIndex + 1, this.totalWorlds);
                 client.submit(() -> client.inGameHud.getChatHud().addMessage(text));
             }
         }

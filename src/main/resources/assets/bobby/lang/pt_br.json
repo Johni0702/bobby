@@ -3,7 +3,7 @@
     "bobby.upgrade.fallback_world": "[Bobby] Seu mundo alternativo contém dados de uma versão antiga do Minecraft. Atualize-o no menu \"Singleplayer\" usando a opção \"Editar\" -> \"Otimizar Mundo\".",
     "bobby.upgrade.not_enabled": "Bobby não está habilitado para este mundo.",
     "bobby.upgrade.begin": "[Bobby] Atualizando os dados do mundo para a versão atual do Minecraft. Isso pode levar alguns minutos.",
-    "bobby.upgrade.progress": "[Bobby] Atualizado %d de (estimado) %d blocos.",
+    "bobby.upgrade.progress": "[Bobby] Atualizado %d de (estimado) %d blocos (world %d of %d).",
     "bobby.upgrade.done": "[Bobby] Atualização de dados mundiais concluída. Seus pedaços antigos agora devem estar visíveis novamente.",
   
     "title.bobby.config": "Bobby Configuração",

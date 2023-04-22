@@ -3,11 +3,15 @@
   "bobby.upgrade.fallback_world": "[Bobby] Your fallback world contains data from an old version of Minecraft. Upgrade it from the \"Singleplayer\" menu using the \"Edit\" -> \"Optimize World\" option.",
   "bobby.upgrade.not_enabled": "Bobby is not enabled for this world.",
   "bobby.upgrade.begin": "[Bobby] Upgrading world data to current Minecraft version. This may take a few minutes.",
-  "bobby.upgrade.progress": "[Bobby] Upgraded %d of (estimated) %d chunks.",
+  "bobby.upgrade.progress": "[Bobby] Upgraded %d of (estimated) %d chunks (world %d of %d).",
   "bobby.upgrade.done": "[Bobby] World data upgrade complete. Your old chunks should now be visible again.",
+
+  "bobby.dynamic_multi_world.not_enabled": "[Bobby] Dynamic World Management is not enabled.",
 
   "title.bobby.config": "Bobby Config",
   "option.bobby.enabled": "Enabled",
+  "option.bobby.dynamic_multi_world": "Dynamic World Management",
+  "tooltip.option.bobby.dynamic_multi_world": "Enables support for servers with multiple identically-named worlds.\n\nWhen enabled, a new local cache is started on each world change. If there are enough chunks with similar content in two caches, they will automatically be merged.\nThis does mean that you may need to walk around a little before Bobby loads in cached chunks if there is little identifying information in your world (e.g. flat worlds).\n\nYou may need to delete your existing cache if it is comprised of multiple worlds to prevent Bobby from merging into it.\nRequires a `/bobby upgrade` after enabling with existing cache.",
   "option.bobby.no_block_entities": "Disable Block Entites",
   "tooltip.option.bobby.no_block_entities": "Do not load block entities (e.g. chests) in fake chunks.\nThese need updating every tick which can add up.\n\nEnabled by default because the render distance for block entities is usually smaller than the server-view distance anyway.",
   "option.bobby.taint_fake_chunks": "Taint Fake Chunks",
