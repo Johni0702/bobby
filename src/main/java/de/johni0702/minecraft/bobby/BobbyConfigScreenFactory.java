@@ -26,6 +26,12 @@ public class BobbyConfigScreenFactory {
                 .setDefaultValue(defaultConfig.isEnabled())
                 .build();
 
+        BooleanListEntry dynamicMultiWorld = entryBuilder
+                .startBooleanToggle(Text.translatable("option.bobby.dynamic_multi_world"), config.isDynamicMultiWorld())
+                .setTooltip(Text.translatable("tooltip.option.bobby.dynamic_multi_world"))
+                .setDefaultValue(defaultConfig.isDynamicMultiWorld())
+                .build();
+
         BooleanListEntry noBlockEntities = entryBuilder
                 .startBooleanToggle(Text.translatable("option.bobby.no_block_entities"), config.isNoBlockEntities())
                 .setTooltip(Text.translatable("tooltip.option.bobby.no_block_entities"))
@@ -64,6 +70,7 @@ public class BobbyConfigScreenFactory {
 
         ConfigCategory general = builder.getOrCreateCategory(Text.translatable("category.bobby.general"));
         general.addEntry(enabled);
+        general.addEntry(dynamicMultiWorld);
         general.addEntry(noBlockEntities);
         general.addEntry(taintFakeChunks);
         general.addEntry(unloadDelaySecs);
@@ -73,6 +80,7 @@ public class BobbyConfigScreenFactory {
 
         builder.setSavingRunnable(() -> update.accept(new BobbyConfig(
                 enabled.getValue(),
+                dynamicMultiWorld.getValue(),
                 noBlockEntities.getValue(),
                 taintFakeChunks.getValue(),
                 unloadDelaySecs.getValue(),

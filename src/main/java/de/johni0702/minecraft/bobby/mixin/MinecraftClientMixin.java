@@ -2,6 +2,7 @@ package de.johni0702.minecraft.bobby.mixin;
 
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.FakeChunkStorage;
+import de.johni0702.minecraft.bobby.Worlds;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.GameOptions;
@@ -48,6 +49,7 @@ public abstract class MinecraftClientMixin {
 
     @Inject(method = "disconnect(Lnet/minecraft/client/gui/screen/Screen;)V", at = @At("RETURN"))
     private void bobbyClose(CallbackInfo ci) {
+        Worlds.closeAll();
         FakeChunkStorage.closeAll();
     }
 }

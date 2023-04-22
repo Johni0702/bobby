@@ -2,7 +2,7 @@
   "bobby.upgrade.required": "[Bobby] Этот мир содержит данные из прошлой версии Minecraft. Выполните `/bobby upgrade` чтобы обновить их.",
   "bobby.upgrade.not_enabled": "Bobby не включён в этом мире.",
   "bobby.upgrade.begin": "[Bobby] Обновление данных мира до актуальной версии Minecraft. Это может занять несколько минут.",
-  "bobby.upgrade.progress": "[Bobby] Обновлено %d из %d (расчётных) чанков.",
+  "bobby.upgrade.progress": "[Bobby] Обновлено %d из %d (расчётных) чанков (world %d of %d).",
   "bobby.upgrade.done": "[Bobby] Обновление данных мира завершено. Старые чанки должны снова стать видимыми.",
 
   "title.bobby.config": "Настройки Bobby",

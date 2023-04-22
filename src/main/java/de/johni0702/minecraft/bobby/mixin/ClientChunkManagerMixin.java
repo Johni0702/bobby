@@ -58,6 +58,11 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         return bobbyChunkManager;
     }
 
+    @Override
+    public VisibleChunksTracker bobby_getRealChunksTracker() {
+        return realChunksTracker;
+    }
+
     @Inject(method = "getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/WorldChunk;", at = @At("RETURN"), cancellable = true)
     private void bobbyGetChunk(int x, int z, ChunkStatus chunkStatus, boolean orEmpty, CallbackInfoReturnable<WorldChunk> ci) {
         // Did we find a live chunk?
@@ -85,6 +90,15 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         // This needs to be called unconditionally because even if there is no chunk loaded at the moment,
         // we might already have one queued which we need to cancel as otherwise it will overwrite the real one later.
         bobbyChunkManager.unload(x, z, true);
+    }
+
+    @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
+    private void bobbyFingerprintRealChunk(CallbackInfoReturnable<WorldChunk> cir) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
+        bobbyChunkManager.fingerprint(cir.getReturnValue());
     }
 
     @Unique

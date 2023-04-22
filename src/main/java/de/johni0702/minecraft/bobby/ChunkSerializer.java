@@ -1,5 +1,6 @@
 package de.johni0702.minecraft.bobby;
 
+import com.google.common.hash.Hashing;
 import com.mojang.serialization.Codec;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.ext.LightingProviderExt;
@@ -36,6 +37,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
@@ -149,7 +151,7 @@ public class ChunkSerializer {
     //       must be unlikely to loose that thread safety in the presence of third party mods) or must be delayed
     //       by moving them into the returned supplier which is executed on the main thread.
     //       For performance reasons though: The more stuff we can do async, the better.
-    public static @Nullable Supplier<WorldChunk> deserialize(ChunkPos pos, NbtCompound level, World world) {
+    public static Pair<WorldChunk, Supplier<WorldChunk>> deserialize(ChunkPos pos, NbtCompound level, World world) {
         BobbyConfig config = Bobby.getInstance().getConfig();
 
         ChunkPos chunkPos = new ChunkPos(level.getInt("xPos"), level.getInt("zPos"));
@@ -275,7 +277,7 @@ public class ChunkSerializer {
             }
         }
 
-        return loadChunk(chunk, blockLight, skyLight, config);
+        return Pair.of(chunk, loadChunk(chunk, blockLight, skyLight, config));
     }
 
     private static Supplier<WorldChunk> loadChunk(
@@ -385,5 +387,63 @@ public class ChunkSerializer {
 
     private static void logRecoverableError(ChunkPos chunkPos, int y, String message) {
         LOGGER.error("Recoverable errors when loading section [" + chunkPos.x + ", " + y + ", " + chunkPos.z + "]: " + message);
+    }
+
+    /**
+     * Computes a fingerprint for the blocks in the given chunk.
+     *
+     * Merely differentiates between opaque and non-opaque block, so should be fairly fast and stable across Minecraft
+     * versions.
+     *
+     * Never returns 0 (so it may be used to indicate an absence of a value).
+     * Returns 1 if the chunk does not contain enough entropy to reliably match against other chunks (e.g. flat world
+     * chunk without any notable structure).
+     */
+    public static long fingerprint(WorldChunk chunk) {
+        ChunkSection[] sectionArray = chunk.getSectionArray();
+
+        BitSet opaqueBlocks = new BitSet(sectionArray.length * 16 * 16 * 16);
+
+        // We consider a chunk low quality (and return 1) if there are no y layers that have mixed content.
+        // I.e. each 16x16x1 layer is either completely filled or completely empty.
+        boolean lowQuality = true;
+
+        int i = 0;
+        for (ChunkSection chunkSection : sectionArray) {
+            if (chunkSection == null) {
+                i += 16 * 16 * 16;
+                continue;
+            }
+            PalettedContainer<BlockState> container = chunkSection.getBlockStateContainer();
+            for (int y = 0; y < 16; y++) {
+                int opaqueCount = 0;
+
+                for (int z = 0; z < 16; z++) {
+                    for (int x = 0; x < 16; x++) {
+                        BlockState blockState = container.get(x, y, z);
+                        if (blockState.isOpaque()) {
+                            opaqueBlocks.set(i);
+                            opaqueCount++;
+                        }
+                        i++;
+                    }
+                }
+
+                if (lowQuality && opaqueCount > 0 && opaqueCount < 16 * 16) {
+                    lowQuality = false;
+                }
+            }
+        }
+
+        if (lowQuality) {
+            return 1;
+        }
+
+        long fingerprint = Hashing.farmHashFingerprint64().hashBytes(opaqueBlocks.toByteArray()).asLong();
+        // 0 and 1 are reserved
+        if (fingerprint == 0 || fingerprint == 1) {
+            return fingerprint + 2;
+        }
+        return fingerprint;
     }
 }

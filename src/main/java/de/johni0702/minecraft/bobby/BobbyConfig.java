@@ -8,6 +8,8 @@ public class BobbyConfig {
     public static final BobbyConfig DEFAULT = new BobbyConfig();
 
     private boolean enabled = true;
+    @Comment("Enables support for servers with multiple identically-named worlds.\n\nWhen enabled, a new local cache is started on each world change. If there are enough chunks with similar content in two caches, they will automatically be merged.\nThis does mean that you may need to walk around a little before Bobby loads in cached chunks if there is little identifying information in your world (e.g. flat worlds).\n\nYou may need to delete your existing cache if it is comprised of multiple worlds to prevent Bobby from merging into it.\nRequires a `/bobby upgrade` after enabling with existing cache.")
+    private boolean dynamicMultiWorld = false;
     @Comment("Do not load block entities (e.g. chests) in fake chunks.\nThese need updating every tick which can add up.\n\nEnabled by default because the render distance for block entities is usually smaller than the server-view distance anyway.")
     private boolean noBlockEntities = true;
     @Comment("Reduces the light levels in fake chunks so you can tell the difference from real ones.")
@@ -25,6 +27,7 @@ public class BobbyConfig {
 
     public BobbyConfig(
             boolean enabled,
+            boolean dynamicMultiWorld,
             boolean noBlockEntities,
             boolean taintFakeChunks,
             int unloadDelaySecs,
@@ -33,6 +36,7 @@ public class BobbyConfig {
             int viewDistanceOverwrite
     ) {
         this.enabled = enabled;
+        this.dynamicMultiWorld = dynamicMultiWorld;
         this.noBlockEntities = noBlockEntities;
         this.taintFakeChunks = taintFakeChunks;
         this.unloadDelaySecs = unloadDelaySecs;
@@ -47,6 +51,10 @@ public class BobbyConfig {
 
     public boolean isEnabled() {
         return enabled;
+    }
+
+    public boolean isDynamicMultiWorld() {
+        return dynamicMultiWorld;
     }
 
     public boolean isTaintFakeChunks() {

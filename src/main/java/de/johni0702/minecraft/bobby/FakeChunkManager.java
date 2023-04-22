@@ -47,6 +47,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class FakeChunkManager {
@@ -56,8 +57,9 @@ public class FakeChunkManager {
     private final ClientWorld world;
     private final ClientChunkManager clientChunkManager;
     private final ClientChunkManagerExt clientChunkManagerExt;
+    private final Worlds worlds;
     private final FakeChunkStorage storage;
-    private final List<FakeChunkStorage> storages;
+    private final List<Function<ChunkPos, CompletableFuture<Optional<NbtCompound>>>> storages = new ArrayList<>();
     private int ticksSinceLastSave;
 
     private final Long2ObjectMap<WorldChunk> fakeChunks = Long2ObjectMaps.synchronize(new Long2ObjectOpenHashMap<>());
@@ -79,10 +81,14 @@ public class FakeChunkManager {
     // Executor for serialization and saving. Single-threaded so we do not have to worry about races between multiple saves for the same chunk.
     private static final ExecutorService saveExecutor = Executors.newSingleThreadExecutor(new DefaultThreadFactory("bobby-saving", true));
 
+    private final Long2ObjectMap<FingerprintJob> fingerprintJobs = new Long2ObjectLinkedOpenHashMap<>();
+
     public FakeChunkManager(ClientWorld world, ClientChunkManager clientChunkManager) {
         this.world = world;
         this.clientChunkManager = clientChunkManager;
         this.clientChunkManagerExt = (ClientChunkManagerExt) clientChunkManager;
+
+        BobbyConfig config = Bobby.getInstance().getConfig();
 
         long seedHash = ((BiomeAccessAccessor) world.getBiomeAccess()).getSeed();
         RegistryKey<World> worldKey = world.getRegistryKey();
@@ -95,24 +101,28 @@ public class FakeChunkManager {
                 .resolve(worldId.getNamespace())
                 .resolve(worldId.getPath());
 
-        storage = FakeChunkStorage.getFor(storagePath, true);
+        if (config.isDynamicMultiWorld()) {
+            worlds = Worlds.getFor(storagePath);
+            storages.add(worlds::loadTag);
 
-        FakeChunkStorage fallbackStorage = null;
+            storage = null;
+        } else {
+            storage = FakeChunkStorage.getFor(storagePath, true);
+            storages.add(storage::loadTag);
+
+            worlds = null;
+        }
+
         LevelStorage levelStorage = client.getLevelStorage();
         if (levelStorage.levelExists(FALLBACK_LEVEL_NAME)) {
             try (LevelStorage.Session session = levelStorage.createSession(FALLBACK_LEVEL_NAME)) {
                 Path worldDirectory = session.getWorldDirectory(worldKey);
                 Path regionDirectory = worldDirectory.resolve("region");
-                fallbackStorage = FakeChunkStorage.getFor(regionDirectory, false);
+                FakeChunkStorage fallbackStorage = FakeChunkStorage.getFor(regionDirectory, false);
+                storages.add(fallbackStorage::loadTag);
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-
-        if (fallbackStorage == null) {
-            storages = List.of(storage);
-        } else {
-            storages = List.of(storage, fallbackStorage);
         }
     }
 
@@ -124,6 +134,10 @@ public class FakeChunkManager {
         return storage;
     }
 
+    public Worlds getWorlds() {
+        return worlds;
+    }
+
     public void update(boolean blocking, BooleanSupplier shouldKeepTicking) {
         update(blocking, shouldKeepTicking, client.options.getViewDistance().getValue());
     }
@@ -132,7 +146,7 @@ public class FakeChunkManager {
         // Once a minute, force chunks to disk
         if (++ticksSinceLastSave > 20 * 60) {
             // completeAll is blocking, so we run it on the io pool
-            Util.getIoWorkerExecutor().execute(storage::completeAll);
+            Util.getIoWorkerExecutor().execute(worlds != null ? worlds::saveAll : storage::completeAll);
 
             ticksSinceLastSave = 0;
         }
@@ -223,6 +237,40 @@ public class FakeChunkManager {
             }
         }
 
+        ObjectIterator<FingerprintJob> fingerprintJobsIter = this.fingerprintJobs.values().iterator();
+        jobs: while (fingerprintJobsIter.hasNext()) {
+            FingerprintJob fingerprintJob = fingerprintJobsIter.next();
+
+            while (fingerprintJob.result == 0) {
+                // Still loading, should we wait for it?
+                if (blocking) {
+                    try {
+                        // This code path is not the default one, it doesn't need super high performance, and having the
+                        // workers notify the main thread just for it is probably not worth it.
+                        //noinspection BusyWait
+                        Thread.sleep(1);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    continue jobs;
+                }
+            }
+
+            // Done loading
+            fingerprintJobsIter.remove();
+
+            assert worlds != null; // fingerprint jobs should only be queued when multi-world support is active
+            worlds.observeChunk(world, fingerprintJob.chunk.getPos(), fingerprintJob.result);
+
+            if (countSinceLastThrottleCheck++ > 10) {
+                countSinceLastThrottleCheck = 0;
+                if (!shouldKeepTicking.getAsBoolean()) {
+                    break;
+                }
+            }
+        }
+
         ObjectIterator<LoadingJob> loadingJobsIter = this.loadingJobs.values().iterator();
         jobs: while (loadingJobsIter.hasNext()) {
             LoadingJob loadingJob = loadingJobsIter.next();
@@ -255,6 +303,13 @@ public class FakeChunkManager {
                 break;
             }
         }
+
+        if (worlds != null) {
+            boolean didMerge = worlds.update();
+            if (didMerge) {
+                loadMissingChunksFromCache();
+            }
+        }
     }
 
     public void loadMissingChunksFromCache() {
@@ -274,8 +329,7 @@ public class FakeChunkManager {
     }
 
     private CompletableFuture<Optional<NbtCompound>> loadTag(ChunkPos chunkPos, int storageIndex) {
-        FakeChunkStorage storage = storages.get(storageIndex);
-        return storage.loadTag(chunkPos).thenCompose(maybeTag -> {
+        return storages.get(storageIndex).apply(chunkPos).thenCompose(maybeTag -> {
             if (maybeTag.isPresent()) {
                 return CompletableFuture.completedFuture(maybeTag);
             }
@@ -338,12 +392,32 @@ public class FakeChunkManager {
 
     public Supplier<WorldChunk> save(WorldChunk chunk) {
         Pair<WorldChunk, Supplier<WorldChunk>> copy = ChunkSerializer.shallowCopy(chunk);
+        fingerprint(copy.getLeft());
         LightingProvider lightingProvider = chunk.getWorld().getLightingProvider();
+        FakeChunkStorage storage = worlds != null ? worlds.getCurrentStorage() : this.storage;
         saveExecutor.execute(() -> {
             NbtCompound nbt = ChunkSerializer.serialize(copy.getLeft(), lightingProvider);
+            nbt.putLong("age", System.currentTimeMillis()); // fallback in case meta gets corrupted
             storage.save(chunk.getPos(), nbt);
         });
         return copy.getRight();
+    }
+
+    public void fingerprint(WorldChunk chunk) {
+        if (worlds == null) {
+            return;
+        }
+
+        long chunkCoord = chunk.getPos().toLong();
+
+        FingerprintJob job = fingerprintJobs.get(chunkCoord);
+        if (job != null) {
+            job.cancelled = true;
+        }
+
+        job = new FingerprintJob(chunk);
+        fingerprintJobs.put(chunkCoord, job);
+        Util.getMainWorkerExecutor().execute(job);
     }
 
     private static String getCurrentWorldOrServerName(ClientPlayNetworkHandler networkHandler) {
@@ -364,7 +438,7 @@ public class FakeChunkManager {
     }
 
     public String getDebugString() {
-        return "F: " + fakeChunks.size() + " L: " + loadingJobs.size() + " U: " + toBeUnloaded.size();
+        return "F: " + fakeChunks.size() + " L: " + loadingJobs.size() + " U: " + toBeUnloaded.size() + " C: " + fingerprintJobs.size();
     }
 
     public Collection<WorldChunk> getFakeChunks() {
@@ -400,7 +474,7 @@ public class FakeChunkManager {
             if (cancelled) {
                 return;
             }
-            result = value.map(it -> ChunkSerializer.deserialize(new ChunkPos(x, z), it, world));
+            result = value.map(it -> ChunkSerializer.deserialize(new ChunkPos(x, z), it, world).getRight());
         }
 
         public void complete() {
@@ -408,5 +482,23 @@ public class FakeChunkManager {
         }
 
         public static final Comparator<LoadingJob> BY_DISTANCE = Comparator.comparing(it -> it.distanceSquared);
+    }
+
+    private static class FingerprintJob implements Runnable {
+        private final WorldChunk chunk;
+        private volatile boolean cancelled;
+        private volatile long result;
+
+        private FingerprintJob(WorldChunk chunk) {
+            this.chunk = chunk;
+        }
+
+        @Override
+        public void run() {
+            if (cancelled) {
+                return;
+            }
+            result = ChunkSerializer.fingerprint(chunk);
+        }
     }
 }

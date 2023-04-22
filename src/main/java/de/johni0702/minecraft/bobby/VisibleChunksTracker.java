@@ -55,4 +55,12 @@ public class VisibleChunksTracker {
         boolean zInside = z >= centerZ - viewDistance && z <= centerZ + viewDistance;
         return xInside && zInside;
     }
+
+    public void forEach(LongConsumer consumer) {
+        for (int x = centerX - viewDistance; x <= centerX + viewDistance; x++) {
+            for (int z = centerZ - viewDistance; z <= centerZ + viewDistance; z++) {
+                consumer.accept(ChunkPos.toLong(x, z));
+            }
+        }
+    }
 }
