@@ -1,4 +1,4 @@
-### 4.0.6-SNAPSHOT
+### 4.0.6
 - Fix sky fog rendering incorrectly as render distance goes beyond 32 (#152)
 - Fix world not loading when `last_access` file has become corrupted (#92)
 - Add Status field to chunk data so one could potentially use the files as a regular world
