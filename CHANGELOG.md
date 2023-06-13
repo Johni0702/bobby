@@ -1,4 +1,5 @@
 ### 5.0.0-SNAPSHOT
+- Update to Minecraft 1.20.1
 
 ### 4.0.6
 - Fix sky fog rendering incorrectly as render distance goes beyond 32 (#152)

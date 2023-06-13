@@ -2,6 +2,7 @@ package de.johni0702.minecraft.bobby;
 
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
+import de.johni0702.minecraft.bobby.ext.LightingProviderExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
 import de.johni0702.minecraft.bobby.mixin.ClientWorldAccessor;
 import io.netty.util.concurrent.DefaultThreadFactory;
@@ -305,8 +306,12 @@ public class FakeChunkManager {
             chunk.clear();
 
             LightingProvider lightingProvider = clientChunkManager.getLightingProvider();
+            LightingProviderExt lightingProviderExt = LightingProviderExt.get(lightingProvider);
             ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
             ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
+
+            lightingProviderExt.bobby_disableColumn(chunkPos);
+
             for (int i = 0; i < chunk.getSectionArray().length; i++) {
                 int y = world.sectionIndexToCoord(i);
                 if (blockLightProvider != null) {

@@ -2,6 +2,7 @@ package de.johni0702.minecraft.bobby;
 
 import com.mojang.serialization.Codec;
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
+import de.johni0702.minecraft.bobby.ext.LightingProviderExt;
 import net.minecraft.SharedConstants;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -209,7 +210,7 @@ public class ChunkSerializer {
                     biomes = new PalettedContainer<>(biomeRegistry.getIndexedEntries(), biomeRegistry.entryOf(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME);
                 }
 
-                ChunkSection chunkSection = new ChunkSection(y, blocks, biomes);
+                ChunkSection chunkSection = new ChunkSection(blocks, biomes);
                 chunkSection.calculateCounts();
                 if (!chunkSection.isEmpty()) {
                     chunkSections[yIndex] = chunkSection;
@@ -291,8 +292,11 @@ public class ChunkSerializer {
             boolean hasSkyLight = world.getDimension().hasSkyLight();
             ChunkManager chunkManager = world.getChunkManager();
             LightingProvider lightingProvider = chunkManager.getLightingProvider();
+            LightingProviderExt lightingProviderExt = LightingProviderExt.get(lightingProvider);
             ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
             ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
+
+            lightingProviderExt.bobby_enabledColumn(pos.toLong());
 
             for (int i = -1; i < chunkSections.length + 1; i++) {
                 int y = world.sectionIndexToCoord(i);
@@ -315,8 +319,6 @@ public class ChunkSerializer {
             for (BlockPos blockPos : chunk.getBlockEntityPositions()) {
                 chunk.getBlockEntity(blockPos);
             }
-
-            chunk.setShouldRenderOnUpdate(true);
 
             return chunk;
         };
