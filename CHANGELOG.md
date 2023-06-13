@@ -1,4 +1,4 @@
-### 5.0.0-SNAPSHOT
+### 5.0.0
 - Update to Minecraft 1.20.1
 
 ### 4.0.6
