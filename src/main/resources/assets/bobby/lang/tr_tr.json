@@ -1,0 +1,24 @@
+{
+  "__comment__": "Translated by @alpeerkaraca",
+  "bobby.upgrade.required": "[Bobby] Bu dünya Minecraft'ın eski sürümlerinden kalma. Güncellemek için `/bobby upgrade` yaz.",
+  "bobby.upgrade.fallback_world": "[Bobby] Yedek dünyanız Minecraft'ın eski sürümlerinden kalma. \"Tek Oyuncu\" Menüsündeki \"Düzenle\" -> \"Dünyayı Optimize Et\" seçeneğiyle güncelleyin.",
+  "bobby.upgrade.not_enabled": "Bobby bu dünyada etkinleştirilmedi.",
+  "bobby.upgrade.begin": "[Bobby] Dünya verisi güncel sürüme yükseltiliyor. Birkaç dakika sürebilir.",
+  "bobby.upgrade.progress": "[Bobby] Chunkların %d 'te %d 'si (yaklaşık) güncellendi.",
+  "bobby.upgrade.done": "[Bobby] Dünya güncellendi. Eski chunkların artık görülebilir.",
+
+  "title.bobby.config": "Bobby Ayarları",
+  "option.bobby.enabled": "Etkinleşirildi",
+  "option.bobby.no_block_entities": "Blok Varlıklarını Devre Dışı Bırak",
+  "tooltip.option.bobby.no_block_entities": "Sahte chunklardaki blok varlıklarını (sandık vb.) yüklemeyin.\nBunların ekleyebileceği her tikin güncellenmesi gerekir.\n\nBlok varlıkları için işleme mesafesi genellikle sunucu görüntüleme mesafesinden daha küçük olduğu için varsayılan olarak etkindir.",
+  "option.bobby.taint_fake_chunks": "Sahte Chunkları İşaretle",
+  "tooltip.option.bobby.taint_fake_chunks": "Gerçek olanlardan farkı anlayabilmeniz için sahte chunklardaki ışık seviyelerini azaltır",
+  "option.bobby.unload_delay": "Chunk Boşaltma Gecikme Süresi (Saniye)",
+  "tooltip.option.bobby.unload_delay": "Görüş mesafenizin dışındaki chunkların boşaltılmasını geciktirir.\nBir alandan kısa bir süre için\nayrılırken (ör. ara sahneler) tüm chunkları yeniden yüklemek zorunda kalmaktan sizi kurtarır.\nBoyutlar arası çalışmaz.",
+  "option.bobby.delete_unused_regions_after_days": "Kullanılmayan Bölgeleri Temizle (Gün)",
+  "tooltip.option.bobby.delete_unused_regions_after_days": "X gün boyunca yüklenmeyen bölgeleri önbellekten sil.\n\nBelirli bir dünyanın önbelleği, sunucuyla bağlantımızı her kestiğinizde temizlenir.\nX gün ziyaret etmezseniz dünya temizlenir.\n\nDevre Dışı bırakmak için -1.\nHer oyundan çıkıştan sonra temizlemek için 0.",
+  "option.bobby.max_render_distance": "En Fazla Render Mesafesi",
+  "tooltip.option.bobby.max_render_distance": "Maksimum Render Mesafesini Değiştirir.\n\nSodium Gereklidir.",
+  "option.bobby.view_distance_overwrite": "Tek Oyunculu Sunucu Görüntüleme Mesafesi",
+  "tooltip.option.bobby.view_distance_overwrite": "Sunucudaki render-distance üzerine yazar.\nBöylece Bobby tek oyunculuda kullanışlı olur.\n\nDevre Dışı Bırakmak İçin 0.\nBobby, yalnızca bu ayar etkinleştirilmişse tek oyunculu modda etkindir.\nEtkinleştirmek/devre dışı bırakmak için yeniden oturum açmayı gerektirir."
+}
