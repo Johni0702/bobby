@@ -4,45 +4,32 @@ import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import de.johni0702.minecraft.bobby.mixin.sodium.SodiumWorldRendererMixin;
 
 import java.lang.reflect.Method;
+import org.spongepowered.asm.mixin.*;
 
 public class SodiumChunkStatusListenerImpl implements ChunkStatusListener {
-    @Override
-    public void onChunkAdded(int x, int z) {
+    public static void callChunkFunction(String func, int x, int z){
         SodiumWorldRenderer sodiumRenderer = SodiumWorldRenderer.instanceNullable();
         if (sodiumRenderer != null) {
-            Method onChunkAdded = null;
-            Method onChunkLightAdded = null;
-            try {
-                onChunkAdded = SodiumWorldRenderer.class.getMethod("onChunkAdded", (Class<?>[]) null);
-                onChunkLightAdded = SodiumWorldRenderer.class.getMethod("onChunkLightAdded", (Class<?>[]) null);
-            } catch (NoSuchMethodException | SecurityException e) {}
-            if(onChunkAdded != null){
-                try {
-                    onChunkAdded.invoke(sodiumRenderer, (Object[]) null);
-                } catch (Exception e) {}
-            }
-            if(onChunkLightAdded != null){
-                try {
-                    onChunkLightAdded.invoke(sodiumRenderer, (Object[]) null);
-                } catch (Exception e) {}
+            Method chunkMethod = null;
+            try{
+                chunkMethod = SodiumWorldRenderer.class.getMethod(func, int.class, int.class);
+            }catch (Exception e){}
+            if (chunkMethod != null) {
+                try{
+                    chunkMethod.invoke(sodiumRenderer, x, z);
+                }catch (Exception e){}
             }
         }
     }
 
     @Override
-    public void onChunkRemoved(int x, int z) {
-        SodiumWorldRenderer sodiumRenderer = SodiumWorldRenderer.instanceNullable();
-        if (sodiumRenderer != null) {
-            Method onChunkRemoved = null;
-            try{
-                onChunkRemoved = SodiumWorldRenderer.class.getMethod("onChunkRemoved", (Class<?>[]) null);
+    public void onChunkAdded(int x, int z) {
+        callChunkFunction("onChunkAdded", x, z);
+        callChunkFunction("onChunkLightAdded", x, z);
+    }
 
-            }catch (Exception e){}
-            if (onChunkRemoved != null) {
-                try{
-                    onChunkRemoved.invoke(sodiumRenderer, (Object[]) null);
-                }catch (Exception e){}
-            }
-        }
+    @Override
+    public void onChunkRemoved(int x, int z) {
+        callChunkFunction("onChunkRemoved", x, z);
     }
 }

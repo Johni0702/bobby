@@ -17,6 +17,11 @@ public abstract class SodiumWorldRendererMixin {
     }
 
     @Unique
+    public void onChunkLightAdded(int x, int z){
+        return;
+    }
+
+    @Unique
     public void onChunkRemoved(int x, int z){
         if (this.renderSectionManager != null)
             this.renderSectionManager.onChunkRemoved(x, z);
