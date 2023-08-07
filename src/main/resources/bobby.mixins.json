@@ -21,7 +21,8 @@
     "WorldRendererMixin",
     "sodium.SodiumChunkManagerMixin",
     "sodium.SodiumClientPlayNetworkHandlerMixin",
-    "sodium.SodiumGameOptionPagesMixin"
+    "sodium.SodiumGameOptionPagesMixin",
+    "sodium.SodiumWorldRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1
