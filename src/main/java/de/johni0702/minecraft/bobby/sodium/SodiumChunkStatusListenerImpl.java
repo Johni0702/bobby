@@ -1,35 +1,36 @@
 package de.johni0702.minecraft.bobby.sodium;
 
+import de.johni0702.minecraft.bobby.mixin.sodium.SodiumWorldRendererAcessor;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
-import de.johni0702.minecraft.bobby.mixin.sodium.SodiumWorldRendererMixin;
-
-import java.lang.reflect.Method;
-import org.spongepowered.asm.mixin.*;
+import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkStatus;
+import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
 
 public class SodiumChunkStatusListenerImpl implements ChunkStatusListener {
-    public static void callChunkFunction(String func, int x, int z){
-        SodiumWorldRenderer sodiumRenderer = SodiumWorldRenderer.instanceNullable();
-        if (sodiumRenderer != null) {
-            Method chunkMethod = null;
-            try{
-                chunkMethod = SodiumWorldRenderer.class.getMethod(func, int.class, int.class);
-            }catch (Exception e){}
-            if (chunkMethod != null) {
-                try{
-                    chunkMethod.invoke(sodiumRenderer, x, z);
-                }catch (Exception e){}
-            }
+
+    private void onChunkLightAdded(int x, int z, SodiumWorldRendererAcessor accessInterface){
+        if (accessInterface != null){
+            ChunkTrackerHolder.get(accessInterface.getWorld()).onChunkStatusAdded(x,z, ChunkStatus.FLAG_ALL);
         }
     }
 
     @Override
     public void onChunkAdded(int x, int z) {
-        callChunkFunction("onChunkAdded", x, z);
-        callChunkFunction("onChunkLightAdded", x, z);
+        SodiumWorldRenderer sodiumRenderer = SodiumWorldRenderer.instanceNullable();
+        if (sodiumRenderer != null) {
+            SodiumWorldRendererAcessor accessInterface = (SodiumWorldRendererAcessor) sodiumRenderer;
+
+            accessInterface.getRenderSectionManager().onChunkAdded(x, z);
+            onChunkLightAdded(x, z, accessInterface);
+        }
     }
 
     @Override
     public void onChunkRemoved(int x, int z) {
-        callChunkFunction("onChunkRemoved", x, z);
+        SodiumWorldRenderer sodiumRenderer = SodiumWorldRenderer.instanceNullable();
+        if (sodiumRenderer != null) {
+            SodiumWorldRendererAcessor accessInterface = (SodiumWorldRendererAcessor) sodiumRenderer;
+
+            accessInterface.getRenderSectionManager().onChunkRemoved(x, z);
+        }
     }
 }
