@@ -1,3 +1,6 @@
+### 5.1.0-dev
+- Added compatibility with Sodium 0.5.0
+
 ### 5.0.0
 - Update to Minecraft 1.20.1
 

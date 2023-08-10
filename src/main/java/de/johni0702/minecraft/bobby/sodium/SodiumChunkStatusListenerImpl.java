@@ -15,85 +15,83 @@ import static java.lang.invoke.MethodType.methodType;
 
 public class SodiumChunkStatusListenerImpl implements ChunkStatusListener {
 
-    @FunctionalInterface
-    interface chunkFunctionInterface {
-        void invoke(SodiumWorldRenderer renderer, int x, int z);
+    /**
+     * Compatibility class for Sodium 0.5.0
+     */
+    static public class Sodium05Compat {
+        public static void onChunkAdded(SodiumWorldRenderer renderer, int x, int z){
+            if(renderer instanceof SodiumWorldRendererAccessor accessor){
+                accessor.getRenderSectionManager().onChunkAdded(x, z);
+            }
+        }
 
-        static chunkFunctionInterface findVirtual(String funcName){
-            try{
-                MethodHandle handle = MethodHandles.lookup().findVirtual(SodiumWorldRenderer.class, funcName, methodType(void.class, int.class, int.class));
-                return (SodiumWorldRenderer renderer, int x, int z) -> {
-                    try{
-                        handle.invoke(renderer, x, z);
-                    }catch (Throwable t){
-                        throw new RuntimeException(t);
-                    }
-                };
-            }catch (NoSuchMethodException | IllegalAccessException e){
-                throw new RuntimeException(e);
+        public static void onChunkLightAdded(SodiumWorldRenderer renderer, int x, int z){
+            if(renderer instanceof SodiumWorldRendererAccessor accessor){
+                ChunkTrackerHolder.get(accessor.getWorld()).onChunkStatusAdded(x,z, ChunkStatus.FLAG_ALL);
+            }
+        }
+
+        public static void onChunkRemoved(SodiumWorldRenderer renderer, int x, int z){
+            if(renderer instanceof SodiumWorldRendererAccessor accessor){
+                accessor.getRenderSectionManager().onChunkRemoved(x, z);
             }
         }
     }
 
-    private static final chunkFunctionInterface ON_CHUNK_ADDED;
-    private static final chunkFunctionInterface ON_CHUNK_LIGHT_ADDED;
-    private static final chunkFunctionInterface ON_CHUNK_REMOVED;
+    /**
+     * Get a method handle for a chunk function in the given compatibility class.
+     * I needs to eiter be a static method with the signature (SodiumWorldRenderer, int, int)void
+     * or a function with the signature (int, int)void which is called on the given SodiumWorldRenderer instance.
+     * @param compatClass The compatibility class to get the method from
+     * @param methodName The name of the method
+     * @param isStatic Whether the method is static or not
+     * @return A method handle for the given method
+     */
+    private static MethodHandle getMethodHandle(Class<?> compatClass, String methodName, boolean isStatic){
+        try{
+            if(isStatic){
+                return MethodHandles.lookup().findStatic(compatClass, methodName, methodType(void.class, SodiumWorldRenderer.class, int.class, int.class));
+            }else{
+                return MethodHandles.lookup().findVirtual(compatClass, methodName, methodType(void.class, int.class, int.class));
+            }
+        }catch (Exception e){
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static final MethodHandle ON_CHUNK_ADDED;
+    private static final MethodHandle ON_CHUNK_LIGHT_ADDED;
+    private static final MethodHandle ON_CHUNK_REMOVED;
 
     static {
-        chunkFunctionInterface ON_CHUNK_ADDED_TMP;
-        chunkFunctionInterface ON_CHUNK_LIGHT_ADDED_TMP;
-        chunkFunctionInterface ON_CHUNK_REMOVED_TMP;
-
         Version sodiumVersion = FabricLoader.getInstance().getModContainer("sodium").get().getMetadata().getVersion();
+        Class<?> compatibilityClass;
+        boolean isStatic = false;
 
-        // sodium 0.4
         try {
             if (sodiumVersion.compareTo(Version.parse("0.5.0")) < 0){
-                try{
-                    ON_CHUNK_ADDED_TMP = chunkFunctionInterface.findVirtual("onChunkAdded");
-                    ON_CHUNK_LIGHT_ADDED_TMP = chunkFunctionInterface.findVirtual("onChunkLightAdded");
-                    ON_CHUNK_REMOVED_TMP = chunkFunctionInterface.findVirtual("onChunkRemoved");
-                }catch (Exception e){
-                    throw new RuntimeException("Sodium 0.4 is present, but Sodium 0.4 integration methods could not be found!", e);
-                }
-
+                // in versions before 0.5.0 the methods are availabe in the SodiumWorldRenderer class
+                // so static stays false and we use the SodiumWorldRenderer class
+                compatibilityClass = SodiumWorldRenderer.class;
             }else{
-                ON_CHUNK_ADDED_TMP = (SodiumWorldRenderer sodiumRenderer, int x, int z) -> {
-                    try{
-                        if (sodiumRenderer instanceof SodiumWorldRendererAccessor accessor) {
-                            accessor.getRenderSectionManager().onChunkAdded(x, z);
-                        }
-                    }catch (Exception e){
-                        throw new RuntimeException(e);
-                    }
-                };
-                ON_CHUNK_LIGHT_ADDED_TMP = (SodiumWorldRenderer sodiumRenderer, int x, int z) -> {
-                    try{
-                        if (sodiumRenderer instanceof SodiumWorldRendererAccessor accessor) {
-                            ChunkTrackerHolder.get(accessor.getWorld()).onChunkStatusAdded(x,z, ChunkStatus.FLAG_ALL);
-                        }
-                    }catch (Exception e){
-                        throw new RuntimeException(e);
-                    }
-                };
-                ON_CHUNK_REMOVED_TMP = (SodiumWorldRenderer sodiumRenderer, int x, int z) -> {
-                    try{
-                        if (sodiumRenderer instanceof SodiumWorldRendererAccessor accessor) {
-                            accessor.getRenderSectionManager().onChunkRemoved(x, z);
-                        }
-                    }catch (Exception e){
-                        throw new RuntimeException(e);
-                    }
-                };
+                // in version 0.5.0 the compatibility class has to be used.
+                // the methods are static so we set isStatic to true
+                compatibilityClass = Sodium05Compat.class;
+                isStatic = true;
             }
-
         } catch (VersionParsingException e) {
             throw new RuntimeException(e);
         }
 
-        ON_CHUNK_ADDED = ON_CHUNK_ADDED_TMP;
-        ON_CHUNK_LIGHT_ADDED = ON_CHUNK_LIGHT_ADDED_TMP;
-        ON_CHUNK_REMOVED = ON_CHUNK_REMOVED_TMP;
+        // get the method handles for all needed methods
+        try{
+            ON_CHUNK_ADDED = getMethodHandle(compatibilityClass, "onChunkAdded", isStatic);
+            ON_CHUNK_LIGHT_ADDED = getMethodHandle(compatibilityClass, "onChunkLightAdded", isStatic);
+            ON_CHUNK_REMOVED = getMethodHandle(compatibilityClass, "onChunkRemoved", isStatic);
+        }catch (Exception e) {
+            throw new RuntimeException("Sodium version " + sodiumVersion.getFriendlyString() + " found but compatibility methods not found.", e);
+        }
+
     }
 
     @Override
@@ -106,7 +104,6 @@ public class SodiumChunkStatusListenerImpl implements ChunkStatusListener {
             } catch (Throwable e) {
                 throw new RuntimeException(e);
             }
-
         }
     }
 
