@@ -29,9 +29,10 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-@Mixin(ClientChunkManager.class)
+@Mixin(value = ClientChunkManager.class, priority = 900)
 public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
     @Shadow @Final private WorldChunk emptyChunk;
+    @Shadow @Final ClientWorld world;
 
     @Shadow @Nullable public abstract WorldChunk getChunk(int i, int j, ChunkStatus chunkStatus, boolean bl);
     @Shadow private static int getChunkMapRadius(int loadDistance) { throw new AssertionError(); }
@@ -158,13 +159,33 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         realChunksTracker.updateViewDistance(getChunkMapRadius(loadDistance), this::saveRealChunk, null);
     }
 
-    @Inject(method = { "unload", "setChunkMapCenter", "updateLoadDistance" }, at = @At("RETURN"))
+    @Inject(method = { "setChunkMapCenter", "updateLoadDistance" }, at = @At("RETURN"))
     private void bobbySubstituteFakeChunksForUnloadedRealOnes(CallbackInfo ci) {
         if (bobbyChunkManager == null) {
             return;
         }
 
         substituteFakeChunksForUnloadedRealOnes();
+    }
+
+    @Inject(
+        method = "unload",
+        at = @At(
+                value = "INVOKE",
+                target = "Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;compareAndSet(ILnet/minecraft/world/chunk/WorldChunk;Lnet/minecraft/world/chunk/WorldChunk;)Lnet/minecraft/world/chunk/WorldChunk;",
+                shift = At.Shift.AFTER
+        ),
+        cancellable = true)
+    private void returnEarlyIfReplacedByFakeChunk(int chunkX, int chunkZ, CallbackInfo ci) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+        substituteFakeChunksForUnloadedRealOnes();
+        // method not inspected, likely it can just immediately call ci.cancel but in case its possible it doesn't i've mirrored the other unload
+        WorldChunk chunk = this.world.getChunk(chunkX, chunkZ);
+        if (chunk instanceof FakeChunk) {
+            ci.cancel(); // bypass Sodium's unload hook
+        }
     }
 
     @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)
