@@ -1,12 +1,10 @@
 package de.johni0702.minecraft.bobby.sodium;
 
 import de.johni0702.minecraft.bobby.mixin.sodium_05.SodiumWorldRendererAccessor;
+import de.johni0702.minecraft.bobby.util.SodiumVersionChecker;
 import me.jellysquid.mods.sodium.client.render.SodiumWorldRenderer;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkStatus;
 import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
-import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.api.Version;
-import net.fabricmc.loader.api.VersionParsingException;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -64,22 +62,23 @@ public class SodiumChunkStatusListenerImpl implements ChunkStatusListener {
     private static final MethodHandle ON_CHUNK_REMOVED;
 
     static {
-        Version sodiumVersion = FabricLoader.getInstance().getModContainer("sodium").get().getMetadata().getVersion();
         Class<?> compatibilityClass;
         boolean isStatic = false;
 
         try {
-            if (sodiumVersion.compareTo(Version.parse("0.5.0")) < 0){
+            if (SodiumVersionChecker.sodiumVersion == SodiumVersionChecker.SodiumVersions.Sodium0_4) {
                 // in versions before 0.5.0 the methods are availabe in the SodiumWorldRenderer class
-                // so static stays false and we use the SodiumWorldRenderer class
+                // so static stays false, and we use the SodiumWorldRenderer class
                 compatibilityClass = SodiumWorldRenderer.class;
-            }else{
+            }else if (SodiumVersionChecker.sodiumVersion == SodiumVersionChecker.SodiumVersions.Sodium0_5){
                 // in version 0.5.0 the compatibility class has to be used.
                 // the methods are static so we set isStatic to true
                 compatibilityClass = Sodium05Compat.class;
                 isStatic = true;
+            }else{
+                throw new RuntimeException("Trying to use sodiumChunkStatusListener with an unsupported Sodium version.");
             }
-        } catch (VersionParsingException e) {
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
@@ -89,7 +88,7 @@ public class SodiumChunkStatusListenerImpl implements ChunkStatusListener {
             ON_CHUNK_LIGHT_ADDED = getMethodHandle(compatibilityClass, "onChunkLightAdded", isStatic);
             ON_CHUNK_REMOVED = getMethodHandle(compatibilityClass, "onChunkRemoved", isStatic);
         }catch (Exception e) {
-            throw new RuntimeException("Sodium version " + sodiumVersion.getFriendlyString() + " found but compatibility methods not found.", e);
+            throw new RuntimeException("Sodium compatibility methods not found.", e);
         }
 
     }
