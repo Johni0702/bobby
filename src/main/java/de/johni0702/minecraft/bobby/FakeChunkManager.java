@@ -322,7 +322,7 @@ public class FakeChunkManager {
                 }
             }
 
-            clientChunkManagerExt.bobby_onFakeChunkRemoved(x, z);
+            clientChunkManagerExt.bobby_onFakeChunkRemoved(x, z, willBeReplaced);
 
             return true;
         }

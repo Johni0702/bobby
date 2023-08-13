@@ -12,16 +12,22 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = ClientPlayNetworkHandler.class, priority = 900) // lower than Sodium so we get to return before it runs
-public abstract class SodiumClientPlayNetworkHandlerMixin implements ClientChunkManagerExt {
+@Mixin(value = ClientPlayNetworkHandler.class, priority = 1100) // higher than Sodium so we get to run after it runs
+public abstract class SodiumClientPlayNetworkHandlerMixin {
     @Shadow
     private ClientWorld world;
 
-    @Inject(method = "onUnloadChunk", at = @At("RETURN"), cancellable = true)
-    private void returnEarlyIfReplacedByFakeChunk(UnloadChunkS2CPacket packet, CallbackInfo ci) {
-        WorldChunk chunk = this.world.getChunk(packet.getX(), packet.getZ());
+    @Inject(method = "onUnloadChunk", at = @At("RETURN"))
+    private void keepChunkRenderedIfReplacedByFakeChunk(UnloadChunkS2CPacket packet, CallbackInfo ci) {
+        int x = packet.getX();
+        int z = packet.getZ();
+        WorldChunk chunk = this.world.getChunk(x, z);
+        // Sodium removes the block and light flags from the unloaded chunk at the end of this method.
+        // We however load our fake chunk at the end of the unload method in ClientChunkManager, so Sodium naturally
+        // would get the last word and un-render the chunk. To prevent that, when we have replaced it with a fake chunk,
+        // we simply re-add the flags.
         if (chunk instanceof FakeChunk) {
-            ci.cancel(); // bypass Sodium's unload hook
+            ((ClientChunkManagerExt) world.getChunkManager()).bobby_onFakeChunkAdded(x, z);
         }
     }
 }

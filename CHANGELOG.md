@@ -1,4 +1,5 @@
 ### 5.0.1-SNAPSHOT
+- Update to Sodium 0.5
 
 ### 5.0.0
 - Update to Minecraft 1.20.1

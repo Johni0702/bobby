@@ -82,21 +82,9 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             return;
         }
 
-        bobby_pauseChunkStatusListener();
-
         // This needs to be called unconditionally because even if there is no chunk loaded at the moment,
         // we might already have one queued which we need to cancel as otherwise it will overwrite the real one later.
         bobbyChunkManager.unload(x, z, true);
-    }
-
-    @Inject(method = "loadChunkFromPacket", at = @At("RETURN"))
-    private void bobbyPostLoadRealChunk(int x, int z, PacketByteBuf buf, NbtCompound nbt, Consumer<ChunkData.BlockEntityVisitor> consumer, CallbackInfoReturnable<WorldChunk> cir) {
-        // Sodium moved this into the ClientPlayNetworkHandler, but I'd rather not move all our stuff there.
-        // It looks like it's supposed to be idempotent (and ran even when the chunk fails to parse), so we'll just call
-        // it here as well and thereby cancel out the above unload.
-        bobby_onFakeChunkAdded(x, z);
-
-        bobby_resumeChunkStatusListener();
     }
 
     @Unique
@@ -113,8 +101,6 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
 
         if (bobbyChunkManager.shouldBeLoaded(chunkX, chunkZ)) {
             bobbyChunkReplacements.add(Pair.of(chunkPos, copy));
-
-            bobby_pauseChunkStatusListener();
         }
     }
 
@@ -127,8 +113,6 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             bobbyChunkManager.load(chunkX, chunkZ, entry.getValue().get());
         }
         bobbyChunkReplacements.clear();
-
-        bobby_resumeChunkStatusListener();
     }
 
     @Inject(method = "unload", at = @At("HEAD"))
@@ -182,17 +166,7 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
     }
 
     @Override
-    public void bobby_onFakeChunkRemoved(int x, int z) {
-        // Vanilla polls for chunks each frame, this is only of interest for Sodium (see SodiumChunkManagerMixin)
-    }
-
-    @Override
-    public void bobby_pauseChunkStatusListener() {
-        // Vanilla polls for chunks each frame, this is only of interest for Sodium (see SodiumChunkManagerMixin)
-    }
-
-    @Override
-    public void bobby_resumeChunkStatusListener() {
+    public void bobby_onFakeChunkRemoved(int x, int z, boolean willBeReplaced) {
         // Vanilla polls for chunks each frame, this is only of interest for Sodium (see SodiumChunkManagerMixin)
     }
 }
