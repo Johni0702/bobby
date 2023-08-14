@@ -6,15 +6,15 @@ import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.ChunkSectionPos;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 
 @Mixin(value = ClientChunkManager.class, priority = 1010) // higher than our normal one
 public abstract class SodiumChunkManagerMixin implements ClientChunkManagerExt {
-    private final ClientWorld world;
 
-    protected SodiumChunkManagerMixin(ClientWorld world) {
-        this.world = world;
-    }
+    @Shadow @Final
+    ClientWorld world;
 
     @Override
     public void bobby_onFakeChunkAdded(int x, int z) {
