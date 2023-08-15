@@ -1,4 +1,4 @@
-### 5.0.1-SNAPSHOT
+### 5.0.1
 - Update to Sodium 0.5
 
 ### 5.0.0
