@@ -19,8 +19,8 @@ public abstract class SodiumClientPlayNetworkHandlerMixin {
 
     @Inject(method = "onUnloadChunk", at = @At("RETURN"))
     private void keepChunkRenderedIfReplacedByFakeChunk(UnloadChunkS2CPacket packet, CallbackInfo ci) {
-        int x = packet.getX();
-        int z = packet.getZ();
+        int x = packet.pos().x;
+        int z = packet.pos().z;
         WorldChunk chunk = this.world.getChunk(x, z);
         // Sodium removes the block and light flags from the unloaded chunk at the end of this method.
         // We however load our fake chunk at the end of the unload method in ClientChunkManager, so Sodium naturally

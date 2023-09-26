@@ -110,7 +110,9 @@ public class LastAccessFile implements Closeable {
 
         Path tmpFile = Files.createTempFile(path.getParent(), path.getFileName().toString(), ".tmp");
         try {
-            Files.write(tmpFile, buf.getWrittenBytes());
+            byte[] bytes = new byte[buf.readableBytes()];
+            buf.readBytes(bytes);
+            Files.write(tmpFile, bytes);
             Files.move(tmpFile, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
         } finally {
             Files.deleteIfExists(tmpFile);

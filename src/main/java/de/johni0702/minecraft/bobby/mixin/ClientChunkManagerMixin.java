@@ -116,12 +116,12 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
     }
 
     @Inject(method = "unload", at = @At("HEAD"))
-    private void bobbySaveChunk(int chunkX, int chunkZ, CallbackInfo ci) {
+    private void bobbySaveChunk(ChunkPos pos, CallbackInfo ci) {
         if (bobbyChunkManager == null) {
             return;
         }
 
-        saveRealChunk(ChunkPos.toLong(chunkX, chunkZ));
+        saveRealChunk(pos.toLong());
     }
 
     @Inject(method = "setChunkMapCenter", at = @At("HEAD"))

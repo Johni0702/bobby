@@ -1,4 +1,5 @@
 ### 5.0.2-SNAPSHOT
+- Update to Minecraft 1.20.2
 - Fix chunk at 0/0 not loading from cache when in render distance on join (#205)
 - Add Ukrainian, Turkish and Belarusian translations
 
