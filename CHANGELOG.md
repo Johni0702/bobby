@@ -1,5 +1,6 @@
 ### 5.0.2-SNAPSHOT
 - Fix chunk at 0/0 not loading from cache when in render distance on join (#205)
+- Add Ukrainian, Turkish and Belarusian translations
 
 ### 5.0.1
 - Update to Sodium 0.5
