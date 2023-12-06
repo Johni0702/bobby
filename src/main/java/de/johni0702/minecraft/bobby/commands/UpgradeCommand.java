@@ -8,7 +8,6 @@ import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.world.ClientWorld;
-import net.minecraft.command.CommandException;
 import net.minecraft.text.Text;
 
 import java.io.IOException;
@@ -25,7 +24,8 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
 
         FakeChunkManager bobbyChunkManager = ((ClientChunkManagerExt) world.getChunkManager()).bobby_getFakeChunkManager();
         if (bobbyChunkManager == null) {
-            throw new CommandException(Text.translatable("bobby.upgrade.not_enabled"));
+            source.sendError(Text.translatable("bobby.upgrade.not_enabled"));
+            return 0;
         }
         FakeChunkStorage storage = bobbyChunkManager.getStorage();
 
