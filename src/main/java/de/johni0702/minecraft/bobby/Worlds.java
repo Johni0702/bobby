@@ -31,7 +31,6 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtIo;
 import net.minecraft.nbt.NbtList;
-import net.minecraft.nbt.NbtSizeTracker;
 import net.minecraft.text.Text;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
@@ -927,7 +926,7 @@ public class Worlds implements AutoCloseable {
     private NbtCompound readFromDisk() {
         if (Files.exists(metaFile)) {
             try (InputStream in = Files.newInputStream(metaFile)) {
-                return NbtIo.readCompressed(in, NbtSizeTracker.ofUnlimitedBytes());
+                return NbtIo.readCompressed(in);
             } catch (IOException e) {
                 LOGGER.error("Failed to read " + metaFile, e);
             }
@@ -1391,7 +1390,7 @@ public class Worlds implements AutoCloseable {
 
             NbtCompound root;
             try (InputStream in = Files.newInputStream(file)) {
-                root = NbtIo.readCompressed(in, NbtSizeTracker.ofUnlimitedBytes());
+                root = NbtIo.readCompressed(in);
             }
 
             long[] chunkCoords = root.getLongArray("chunk_coords");
