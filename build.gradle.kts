@@ -9,12 +9,13 @@ plugins {
 
 val modVersion: String by project
 val mavenGroup: String by project
-version = modVersion
 group = mavenGroup
 
 val minecraftVersion: String by project
 val clothConfigVersion: String by project
 val modMenuVersion: String by project
+
+version = "$modVersion+mc$minecraftVersion"
 
 dependencies {
 	val yarnMappings: String by project
@@ -49,13 +50,13 @@ dependencies {
 }
 
 tasks.processResources {
-	inputs.property("version", modVersion)
+	inputs.property("version", project.version)
 	inputs.property("clothConfigVersion", clothConfigVersion)
 	inputs.property("modMenuVersion", modMenuVersion)
 
 	filesMatching("fabric.mod.json") {
 		expand(mutableMapOf(
-				"version" to modVersion,
+				"version" to project.version,
 				"clothConfigVersion" to clothConfigVersion,
 				"modMenuVersion" to modMenuVersion
 		))
@@ -105,7 +106,7 @@ repositories {
 
 fun readChangelog(): String {
 	val lines = project.file("CHANGELOG.md").readText().lineSequence().iterator()
-	if (lines.next() != "### ${project.version}") {
+	if (lines.next() != "### $modVersion") {
 		throw GradleException("CHANGELOG.md did not start with expected version!")
 	}
 	return lines.asSequence().takeWhile { it.isNotBlank() }.joinToString("\n")
