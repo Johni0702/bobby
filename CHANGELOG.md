@@ -1,4 +1,4 @@
-### 5.1.0-SNAPSHOT
+### 5.1.0
 - Add support for servers with multiple identically-named worlds (e.g. proxies) (#72)
   Note: Must be enabled in config.
   When enabled, a new local cache is started on each world change. If there are enough chunks with similar content in two caches, they will automatically be merged.
