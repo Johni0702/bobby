@@ -91,21 +91,22 @@ public class Worlds implements AutoCloseable {
     private static final Map<Path, Worlds> active = new HashMap<>();
 
     public static Worlds getFor(Path directory) {
-        if (!MinecraftClient.getInstance().isOnThread()) {
-            throw new IllegalStateException("Must be called from main thread.");
+        synchronized (active) {
+            return active.computeIfAbsent(directory, f -> new Worlds(directory));
         }
-        return active.computeIfAbsent(directory, f -> new Worlds(directory));
     }
 
     public static void closeAll() {
-        for (Worlds worlds : active.values()) {
-            try {
-                worlds.close();
-            } catch (IOException e) {
-                LOGGER.error("Failed to close storage at " + worlds.directory, e);
+        synchronized (active) {
+            for (Worlds worlds : active.values()) {
+                try {
+                    worlds.close();
+                } catch (IOException e) {
+                    LOGGER.error("Failed to close storage at " + worlds.directory, e);
+                }
             }
+            active.clear();
         }
-        active.clear();
     }
 
     private final Path directory;
@@ -148,7 +149,8 @@ public class Worlds implements AutoCloseable {
 
         if (!outdatedWorlds.isEmpty()) {
             Text text = translatable("bobby.upgrade.required");
-            MinecraftClient.getInstance().inGameHud.getChatHud().addMessage(text);
+            MinecraftClient client = MinecraftClient.getInstance();
+            client.submit(() -> client.inGameHud.getChatHud().addMessage(text));
         }
     }
 

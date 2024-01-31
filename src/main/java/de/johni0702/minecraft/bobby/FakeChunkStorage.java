@@ -46,21 +46,22 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     public static final Pattern REGION_FILE_PATTERN = Pattern.compile("^r\\.(-?[0-9]+)\\.(-?[0-9]+)\\.mca$");
 
     public static FakeChunkStorage getFor(Path directory, boolean writeable) {
-        if (!MinecraftClient.getInstance().isOnThread()) {
-            throw new IllegalStateException("Must be called from main thread.");
+        synchronized (active) {
+            return active.computeIfAbsent(directory, f -> new FakeChunkStorage(directory, writeable));
         }
-        return active.computeIfAbsent(directory, f -> new FakeChunkStorage(directory, writeable));
     }
 
     public static void closeAll() {
-        for (FakeChunkStorage storage : active.values()) {
-            try {
-                storage.close();
-            } catch (IOException e) {
-                LOGGER.error("Failed to close storage", e);
+        synchronized (active) {
+            for (FakeChunkStorage storage : active.values()) {
+                try {
+                    storage.close();
+                } catch (IOException e) {
+                    LOGGER.error("Failed to close storage", e);
+                }
             }
+            active.clear();
         }
-        active.clear();
     }
 
     private final Path directory;

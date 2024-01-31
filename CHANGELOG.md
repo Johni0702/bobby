@@ -4,6 +4,7 @@
   When enabled, a new local cache is started on each world change. If there are enough chunks with similar content in two caches, they will automatically be merged.
   This does mean that you may need to walk around a little before Bobby loads in cached chunks if there is little identifying information in your world (e.g. flat worlds).
   You may need to delete your existing cache if it is comprised of multiple worlds to prevent Bobby from merging into it.
+- Fix compatibility with SkinShuffle (#192)
 
 ### 5.0.3
 - Update to Minecraft 1.20.3
