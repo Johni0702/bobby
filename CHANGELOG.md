@@ -1,3 +1,5 @@
+### 5.2.0-SNAPSHOT
+
 ### 5.1.0
 - Add support for servers with multiple identically-named worlds (e.g. proxies) (#72)
   Note: Must be enabled in config.
