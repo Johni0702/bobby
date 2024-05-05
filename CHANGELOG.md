@@ -1,6 +1,7 @@
 ### 5.2.0-SNAPSHOT
 - Update to Minecraft 1.20.6
 - Fix game crashing/freezing when world name contains illegal characters (#67)
+- Fix "This world contains data from an old version" on new worlds with "Dynamic World Management" enabled (#246)
 
 ### 5.1.0
 - Add support for servers with multiple identically-named worlds (e.g. proxies) (#72)

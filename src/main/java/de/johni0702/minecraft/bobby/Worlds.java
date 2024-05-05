@@ -981,7 +981,9 @@ public class Worlds implements AutoCloseable {
     }
 
     private void load(NbtCompound root) {
-        if (root == null) {
+        if (root == null && !Files.exists(directory)) {
+            nextWorldId = 1;
+        } else if (root == null) {
             outdatedWorlds.add(new World(0, 0));
 
             try (Stream<Path> stream = Files.list(directory)) {
