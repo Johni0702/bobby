@@ -1,6 +1,6 @@
 package de.johni0702.minecraft.bobby;
 
-import com.mojang.serialization.Codec;
+import com.mojang.serialization.MapCodec;
 import de.johni0702.minecraft.bobby.util.RegionPos;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import net.minecraft.SharedConstants;
@@ -14,6 +14,7 @@ import net.minecraft.world.World;
 import net.minecraft.world.gen.chunk.ChunkGenerator;
 import net.minecraft.world.gen.chunk.FlatChunkGenerator;
 import net.minecraft.world.storage.StorageIoWorker;
+import net.minecraft.world.storage.StorageKey;
 import net.minecraft.world.storage.VersionedChunkStorage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -71,7 +72,12 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     private final LastAccessFile lastAccess;
 
     private FakeChunkStorage(Path directory, boolean writeable) {
-        super(directory, MinecraftClient.getInstance().getDataFixer(), false);
+        super(
+                new StorageKey("dummy", World.OVERWORLD, "bobby"),
+                directory,
+                MinecraftClient.getInstance().getDataFixer(),
+                false
+        );
 
         this.directory = directory;
         this.writeable = writeable;
@@ -148,7 +154,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     }
 
     public void upgrade(RegistryKey<World> worldKey, BiConsumer<Integer, Integer> progress) throws IOException {
-        Optional<RegistryKey<Codec<? extends ChunkGenerator>>> generatorKey =
+        Optional<RegistryKey<MapCodec<? extends ChunkGenerator>>> generatorKey =
                 Optional.of(Registries.CHUNK_GENERATOR.getKey(FlatChunkGenerator.CODEC).orElseThrow());
 
         List<ChunkPos> chunks = getRegions(directory).stream().flatMap(RegionPos::getContainedChunks).toList();

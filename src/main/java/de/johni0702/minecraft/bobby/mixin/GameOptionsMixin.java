@@ -27,7 +27,7 @@ public class GameOptionsMixin {
     @ModifyArg(
             method = "<init>",
             slice = @Slice(from = @At(value = "CONSTANT", args = "stringValue=options.renderDistance")),
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/SimpleOption$ValidatingIntSliderCallbacks;<init>(II)V", ordinal = 0),
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/option/SimpleOption$ValidatingIntSliderCallbacks;<init>(IIZ)V", ordinal = 0),
             index = 1
     )
     private int considerBobbyMaxRenderDistanceSetting(int vanillaSetting) {

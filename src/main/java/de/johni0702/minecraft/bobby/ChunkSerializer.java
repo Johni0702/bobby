@@ -13,6 +13,7 @@ import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLongArray;
 import net.minecraft.nbt.NbtOps;
+import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKeys;
 import net.minecraft.registry.entry.RegistryEntry;
@@ -34,7 +35,6 @@ import net.minecraft.world.chunk.light.LightingProvider;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -65,10 +65,11 @@ public class ChunkSerializer {
     );
 
     public static NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
-        Registry<Biome> biomeRegistry = chunk.getWorld().getRegistryManager().get(RegistryKeys.BIOME);
+        DynamicRegistryManager registryManager = chunk.getWorld().getRegistryManager();
+        Registry<Biome> biomeRegistry = registryManager.get(RegistryKeys.BIOME);
         Codec<ReadableContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createReadableContainerCodec(
                 biomeRegistry.getIndexedEntries(),
-                biomeRegistry.createEntryCodec(),
+                biomeRegistry.getEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
                 biomeRegistry.entryOf(BiomeKeys.PLAINS)
         );
@@ -94,8 +95,8 @@ public class ChunkSerializer {
             int i = chunk.sectionCoordToIndex(y);
             ChunkSection chunkSection = i >= 0 && i < chunkSections.length ? chunkSections[i] : null;
             if (chunkSection != null) {
-                sectionTag.put("block_states", BLOCK_CODEC.encodeStart(NbtOps.INSTANCE, chunkSection.getBlockStateContainer()).getOrThrow(false, LOGGER::error));
-                sectionTag.put("biomes", biomeCodec.encodeStart(NbtOps.INSTANCE, chunkSection.getBiomeContainer()).getOrThrow(false, LOGGER::error));
+                sectionTag.put("block_states", BLOCK_CODEC.encodeStart(NbtOps.INSTANCE, chunkSection.getBlockStateContainer()).getOrThrow());
+                sectionTag.put("biomes", biomeCodec.encodeStart(NbtOps.INSTANCE, chunkSection.getBiomeContainer()).getOrThrow());
                 empty = false;
             }
 
@@ -128,7 +129,7 @@ public class ChunkSerializer {
         } else {
             blockEntitiesTag = new NbtList();
             for (BlockPos pos : chunk.getBlockEntityPositions()) {
-                NbtCompound blockEntityTag = chunk.getPackedBlockEntityNbt(pos);
+                NbtCompound blockEntityTag = chunk.getPackedBlockEntityNbt(pos, registryManager);
                 if (blockEntityTag != null) {
                     blockEntitiesTag.add(blockEntityTag);
                 }
@@ -162,7 +163,7 @@ public class ChunkSerializer {
         Registry<Biome> biomeRegistry = world.getRegistryManager().get(RegistryKeys.BIOME);
         Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createPalettedContainerCodec(
                 biomeRegistry.getIndexedEntries(),
-                biomeRegistry.createEntryCodec(),
+                biomeRegistry.getEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
                 biomeRegistry.entryOf(BiomeKeys.PLAINS)
         );
@@ -198,7 +199,7 @@ public class ChunkSerializer {
                 if (sectionTag.contains("block_states", NbtElement.COMPOUND_TYPE)) {
                     blocks = BLOCK_CODEC.parse(NbtOps.INSTANCE, sectionTag.getCompound("block_states"))
                             .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
-                            .getOrThrow(false, LOGGER::error);
+                            .getOrThrow();
                 } else {
                     blocks = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
                 }
@@ -207,7 +208,7 @@ public class ChunkSerializer {
                 if (sectionTag.contains("biomes", NbtElement.COMPOUND_TYPE)) {
                     biomes = biomeCodec.parse(NbtOps.INSTANCE, sectionTag.getCompound("biomes"))
                             .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
-                            .getOrThrow(false, LOGGER::error);
+                            .getOrThrow();
                 } else {
                     biomes = new PalettedContainer<>(biomeRegistry.getIndexedEntries(), biomeRegistry.entryOf(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME);
                 }
@@ -356,7 +357,7 @@ public class ChunkSerializer {
 
         NbtList blockEntitiesTag = new NbtList();
         for (BlockPos pos : original.getBlockEntityPositions()) {
-            NbtCompound blockEntityTag = original.getPackedBlockEntityNbt(pos);
+            NbtCompound blockEntityTag = original.getPackedBlockEntityNbt(pos, world.getRegistryManager());
             if (blockEntityTag != null) {
                 blockEntitiesTag.add(blockEntityTag);
                 if (!config.isNoBlockEntities()) {
