@@ -112,6 +112,7 @@ public class FakeChunkManager {
 
         if (config.isDynamicMultiWorld()) {
             worlds = Worlds.getFor(storagePath);
+            worlds.startNewWorld();
             storages.add(worlds::loadTag);
 
             storage = null;
