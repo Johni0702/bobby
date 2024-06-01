@@ -1,4 +1,5 @@
 ### 5.2.1-SNAPSHOT
+- Fix "Dynamic World Management" not working when switching server without full reconnect (#250) (thanks to KrisAphalon!)
 
 ### 5.2.0
 - Update to Minecraft 1.20.6

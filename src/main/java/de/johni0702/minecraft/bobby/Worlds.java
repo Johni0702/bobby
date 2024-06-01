@@ -154,6 +154,23 @@ public class Worlds implements AutoCloseable {
         }
     }
 
+    public void startNewWorld() {
+        // When switching from one server to another, this function can be executed multiple times
+        // Without this early return, that would create multiple empty words,
+        // after which only the last one would be merged and the empty ones would stay in memory
+        if (worlds.get(currentWorldId).knownRegions.isEmpty()) {
+            return;
+        }
+
+        lock.writeLock().lock();
+        try {
+            currentWorldId = nextWorldId++;
+            worlds.put(currentWorldId, new World(currentWorldId, CURRENT_SAVE_VERSION));
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public CompletableFuture<Optional<NbtCompound>> loadTag(ChunkPos chunkPos) {
         RegionPos regionPos = RegionPos.from(chunkPos);
         long regionCoord = regionPos.toLong();
