@@ -1,3 +1,5 @@
+### 5.2.1-SNAPSHOT
+
 ### 5.2.0
 - Update to Minecraft 1.20.6
 - Fix game crashing/freezing when world name contains illegal characters (#67)
