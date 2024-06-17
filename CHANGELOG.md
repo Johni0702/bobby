@@ -1,4 +1,4 @@
-### 5.2.2-SNAPSHOT
+### 5.2.2
 - Update to Minecraft 1.21
 
 ### 5.2.1
