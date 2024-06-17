@@ -1,4 +1,4 @@
-### 5.2.1-SNAPSHOT
+### 5.2.1
 - Fix "Dynamic World Management" not working when switching server without full reconnect (#250) (thanks to KrisAphalon!)
 
 ### 5.2.0
