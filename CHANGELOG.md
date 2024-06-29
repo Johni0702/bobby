@@ -1,4 +1,5 @@
 ### 5.2.3-SNAPSHOT
+- Fix occasional chunk missing light data when its original chunk was loaded and immediately unloaded within 1-10 frames (#290)
 
 ### 5.2.2
 - Update to Minecraft 1.21
