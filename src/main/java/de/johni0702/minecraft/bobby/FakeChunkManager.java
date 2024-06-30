@@ -2,6 +2,7 @@ package de.johni0702.minecraft.bobby;
 
 import de.johni0702.minecraft.bobby.ext.ChunkLightProviderExt;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
+import de.johni0702.minecraft.bobby.ext.ClientPlayNetworkHandlerExt;
 import de.johni0702.minecraft.bobby.ext.LightingProviderExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
 import de.johni0702.minecraft.bobby.mixin.ClientWorldAccessor;
@@ -384,14 +385,30 @@ public class FakeChunkManager {
 
             lightingProviderExt.bobby_disableColumn(chunkPos);
 
-            for (int i = 0; i < chunk.getSectionArray().length; i++) {
-                int y = world.sectionIndexToCoord(i);
-                if (blockLightProvider != null) {
-                    blockLightProvider.bobby_removeSectionData(ChunkSectionPos.asLong(x, y, z));
+            // See the comment above the bobby_queueUnloadFakeLightDataTask implementation
+            Runnable unloadLightData = () -> {
+                for (int i = 0; i < chunk.getSectionArray().length; i++) {
+                    int y = world.sectionIndexToCoord(i);
+                    if (blockLightProvider != null) {
+                        blockLightProvider.bobby_removeSectionData(ChunkSectionPos.asLong(x, y, z));
+                    }
+                    if (skyLightProvider != null) {
+                        skyLightProvider.bobby_removeSectionData(ChunkSectionPos.asLong(x, y, z));
+                    }
                 }
-                if (skyLightProvider != null) {
-                    skyLightProvider.bobby_removeSectionData(ChunkSectionPos.asLong(x, y, z));
-                }
+            };
+            if (willBeReplaced) {
+                ClientPlayNetworkHandler networkHandler = ((ClientWorldAccessor) world).getNetworkHandler();
+                ClientPlayNetworkHandlerExt.get(networkHandler).bobby_queueUnloadFakeLightDataTask(() -> {
+                    if (fakeChunks.containsKey(chunkPos)) {
+                        // Real chunk has been unloaded in the meantime and is now a fake chunk again, that fake
+                        // chunk will have loaded its own fake light, so we shouldn't unload it.
+                        return;
+                    }
+                    unloadLightData.run();
+                });
+            } else {
+                unloadLightData.run();
             }
 
             clientChunkManagerExt.bobby_onFakeChunkRemoved(x, z, willBeReplaced);
