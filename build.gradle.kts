@@ -17,6 +17,27 @@ val modMenuVersion: String by project
 
 version = "$modVersion+mc$minecraftVersion"
 
+sourceSets {
+	val main = main.get()
+	loom.mixin.add(main, "bobby.refmap.json")
+	create("sodium05") {
+		loom.createRemapConfigurations(this)
+		loom.mixin.add(this, "bobby-sodium05-compat.refmap.json")
+		compileClasspath += main.compileClasspath
+		compileClasspath += main.output
+		main.runtimeClasspath += output
+		tasks.jar { from(output) }
+	}
+	create("sodium06") {
+		loom.createRemapConfigurations(this)
+		loom.mixin.add(this, "bobby-sodium06-compat.refmap.json")
+		compileClasspath += main.compileClasspath
+		compileClasspath += main.output
+		main.runtimeClasspath += output
+		tasks.jar { from(output) }
+	}
+}
+
 dependencies {
 	val yarnMappings: String by project
 	val loaderVersion: String by project
@@ -24,7 +45,8 @@ dependencies {
 	val configurateVersion: String by project
 	val geantyrefVersion: String by project
 	val hoconVersion: String by project
-	val sodiumVersion: String by project
+	val sodium05Version: String by project
+	val sodium06Version: String by project
 	val starlightVersion: String by project
 	val confabricateVersion: String by project
 	minecraft("com.mojang:minecraft:${minecraftVersion}")
@@ -42,7 +64,8 @@ dependencies {
 	include("io.leangen.geantyref:geantyref:$geantyrefVersion")
 	include("com.typesafe:config:$hoconVersion")
 
-	modCompileOnly("maven.modrinth:sodium:$sodiumVersion")
+	"modSodium05CompileOnly"("maven.modrinth:sodium:$sodium05Version")
+	"modSodium06CompileOnly"("maven.modrinth:sodium:$sodium06Version")
 	modCompileOnly("maven.modrinth:starlight:$starlightVersion")
 	modCompileOnly("ca.stellardrift:confabricate:$confabricateVersion")
 	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")

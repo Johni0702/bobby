@@ -1,4 +1,4 @@
-package de.johni0702.minecraft.bobby.mixin.sodium;
+package de.johni0702.minecraft.bobby.mixin.sodium05;
 
 import de.johni0702.minecraft.bobby.Bobby;
 import me.jellysquid.mods.sodium.client.gui.SodiumGameOptionPages;

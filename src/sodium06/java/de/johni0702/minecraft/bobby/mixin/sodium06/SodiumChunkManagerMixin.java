@@ -1,8 +1,8 @@
-package de.johni0702.minecraft.bobby.mixin.sodium;
+package de.johni0702.minecraft.bobby.mixin.sodium06;
 
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
-import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkStatus;
-import me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
+import net.caffeinemc.mods.sodium.client.render.chunk.map.ChunkStatus;
+import net.caffeinemc.mods.sodium.client.render.chunk.map.ChunkTrackerHolder;
 import net.minecraft.client.world.ClientChunkManager;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.math.ChunkSectionPos;

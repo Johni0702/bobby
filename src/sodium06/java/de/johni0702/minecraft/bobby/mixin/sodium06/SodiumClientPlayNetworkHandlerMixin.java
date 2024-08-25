@@ -1,4 +1,4 @@
-package de.johni0702.minecraft.bobby.mixin.sodium;
+package de.johni0702.minecraft.bobby.mixin.sodium06;
 
 import de.johni0702.minecraft.bobby.FakeChunk;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;

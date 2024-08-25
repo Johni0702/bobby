@@ -27,7 +27,9 @@
     ]
   },
   "mixins": [
-    "bobby.mixins.json"
+    "bobby.mixins.json",
+    "bobby-sodium05-compat.mixins.json",
+    "bobby-sodium06-compat.mixins.json"
   ],
 
   "depends": {
