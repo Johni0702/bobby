@@ -1,3 +1,5 @@
+### 5.2.4-SNAPSHOT
+
 ### 5.2.3
 - Fix occasional chunk missing light data when its original chunk was loaded and immediately unloaded within 1-10 frames (#290)
 - Fix newly loaded real chunks sometimes flickering black for a few frames without Sodium or Starlight (#290)
