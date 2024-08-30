@@ -5,19 +5,23 @@
   "bobby.upgrade.begin": "[Bobby] 將世界資料更新到現在的 Minecraft 版本。這可能需要幾分鐘。",
   "bobby.upgrade.progress": "[Bobby] 已更新 %d 中的（估計） %d 個區塊。",
   "bobby.upgrade.done": "[Bobby] 世界資料升級完成。現在你應該能夠再看到舊區塊了。",
-
+  
+  "bobby.dynamic_multi_world.not_enabled": "[Bobby] 動態世界管理未啟用。",
+  
   "title.bobby.config": "Bobby 設定",
   "option.bobby.enabled": "啟用",
-  "option.bobby.no_block_entities": "禁用方塊實體",
-  "tooltip.option.bobby.no_block_entities": "不要載入方塊實體（例如箱子）在假區塊。\n這些需要每刻更新，可能會增加負擔。\n\n預設啟用，因為方塊實體的顯示距離通常比伺服器顯示距離小。",
+  "option.bobby.dynamic_multi_world": "動態世界管理",
+  "tooltip.option.bobby.dynamic_multi_world": "為具有多個同名世界的伺服器啟用支援。\n\n啟用後，每次切換世界時都會啟動新的本機快取。如果兩個快取中有足夠多的區塊具有相似內容，它們將自動合併。\n這確實意味著，如果你的世界中幾乎沒有識別資訊（例如，平坦世界），你可能需要稍微走動一下，Bobby 才能載入快取的區塊。\n\n如果現有快取由多個世界組成，你可能需要將其刪除，以防止 Bobby 合併到其中。\n需要在啟用現有快取後執行 `/bobby upgrade`。",
+  "option.bobby.no_block_entities": "停用方塊實體",
+  "tooltip.option.bobby.no_block_entities": "不要載入方塊實體（例如箱子）在假區塊中。\n這些需要每刻更新，可能會增加負擔。\n\n預設為啟用，因為方塊實體的顯示距離通常比伺服器顯示距離小。",
   "option.bobby.taint_fake_chunks": "降低假區塊亮度",
-  "tooltip.option.bobby.taint_fake_chunks": "在假區塊限制亮度，以便你可以區分他們的差異。",
+  "tooltip.option.bobby.taint_fake_chunks": "在假區塊中限制亮度，以便你可以區分它們的差異。",
   "option.bobby.unload_delay": "區塊卸載延遲（秒）",
   "tooltip.option.bobby.unload_delay": "延遲卸載超出你顯示距離的區塊。\n當你短暫離開一個區域（例如切換場景）時，可避免你重新載入所有區塊。\n不會跨維度運作。",
   "option.bobby.delete_unused_regions_after_days": "清理未使用的區域（天）",
-  "tooltip.option.bobby.delete_unused_regions_after_days": "當區域在 X 天內未被載入時，從快取中刪除區域。\n\n當你從服務器斷開連接時，就會清理指定世界的快取。\n當遊戲啟動並且你 X 天內沒有進入世界\n\n設定為 -1 表示禁用。\n設定為 0 表示每次中斷連線後清理所有內容。",
+  "tooltip.option.bobby.delete_unused_regions_after_days": "當區域在 X 天內未被載入時，從快取中刪除區域。\n\n當你從伺服器斷開連線時，就會清理指定世界的快取。\n當遊戲啟動並且你 X 天內沒有進入世界\n\n設定為 -1 表示停用。\n設定為 0 表示每次中斷連線後清理所有內容。",
   "option.bobby.max_render_distance": "最大顯示距離",
   "tooltip.option.bobby.max_render_distance": "更改顯示距離可設定的最大值\n\n需要 Sodium。",
   "option.bobby.view_distance_overwrite": "單人遊戲伺服器顯示距離",
-  "tooltip.option.bobby.view_distance_overwrite": "覆蓋內置伺服器的顯示距離。\n這使 Bobby 在單人遊戲中更有用。\n\n設定為 0 表示禁用。\n僅在啟用此功能時 Bobby 在單人遊戲中生效。\n需要重新啟動遊戲以啟用或禁用。"
+  "tooltip.option.bobby.view_distance_overwrite": "覆蓋內建伺服器的顯示距離。\n這讓 Bobby 在單人遊戲中更有用。\n\n設定為 0 表示停用。\n僅在啟用此功能時，Bobby 才會在單人遊戲中生效。\n需要重新啟動遊戲以啟用或停用。"
 }
