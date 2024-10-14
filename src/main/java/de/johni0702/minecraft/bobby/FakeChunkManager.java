@@ -28,6 +28,8 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.profiler.Profiler;
+import net.minecraft.util.profiler.Profilers;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.ChunkStatus;
@@ -314,9 +316,10 @@ public class FakeChunkManager {
             // Done loading
             loadingJobsIter.remove();
 
-            client.getProfiler().push("loadFakeChunk");
+            Profiler profiler = Profilers.get();
+            profiler.push("loadFakeChunk");
             loadingJob.complete();
-            client.getProfiler().pop();
+            profiler.pop();
 
             if (!shouldKeepTicking.getAsBoolean()) {
                 break;

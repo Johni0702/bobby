@@ -9,6 +9,7 @@ import net.minecraft.client.option.GameOptions;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.Util;
 import net.minecraft.util.profiler.Profiler;
+import net.minecraft.util.profiler.Profilers;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -19,7 +20,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(MinecraftClient.class)
 public abstract class MinecraftClientMixin {
-    @Shadow private Profiler profiler;
 
     @Shadow @Final public GameOptions options;
 
@@ -35,6 +35,7 @@ public abstract class MinecraftClientMixin {
             return;
         }
 
+        Profiler profiler = Profilers.get();
         profiler.push("bobbyUpdate");
 
         int maxFps = options.getMaxFps().getValue();

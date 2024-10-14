@@ -6,6 +6,8 @@ import de.johni0702.minecraft.bobby.util.FlawlessFrames;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.render.GameRenderer;
 import net.minecraft.client.world.ClientWorld;
+import net.minecraft.util.profiler.Profiler;
+import net.minecraft.util.profiler.Profilers;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -36,10 +38,11 @@ public abstract class GameRendererMixin {
             return;
         }
 
-        this.client.getProfiler().push("bobbyUpdate");
+        Profiler profiler = Profilers.get();
+        profiler.push("bobbyUpdate");
 
         bobbyChunkManager.update(true, () -> true);
 
-        this.client.getProfiler().pop();
+        profiler.pop();
     }
 }

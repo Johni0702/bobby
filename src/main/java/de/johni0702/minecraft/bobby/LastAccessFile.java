@@ -76,7 +76,7 @@ public class LastAccessFile implements Closeable {
     private void scheduleSave() {
         if (closed) return;
 
-        Util.getIoWorkerExecutor().submit(this::saveOrLog);
+        Util.getIoWorkerExecutor().execute(this::saveOrLog);
 
         CompletableFuture.delayedExecutor(1, TimeUnit.MINUTES).execute(this::scheduleSave);
     }

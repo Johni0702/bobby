@@ -117,7 +117,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         if (lastAccess != null) {
             lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
         }
-        setNbt(pos, chunk);
+        setNbt(pos, () -> chunk);
     }
 
     public CompletableFuture<Optional<NbtCompound>> loadTag(ChunkPos pos) {

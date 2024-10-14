@@ -42,8 +42,13 @@ public class Bobby implements ClientModInitializer {
     private static final Logger LOGGER = LogManager.getLogger();
 
     public static final String MOD_ID = "bobby";
-    { instance = this; }
+
+    {
+        instance = this;
+    }
+
     private static Bobby instance;
+
     public static Bobby getInstance() {
         return instance;
     }
@@ -82,7 +87,7 @@ public class Bobby implements ClientModInitializer {
         configReference.subscribe(new TaintChunksConfigHandler()::update);
         configReference.subscribe(new MaxRenderDistanceConfigHandler()::update);
 
-        Util.getIoWorkerExecutor().submit(this::cleanupOldWorlds);
+        Util.getIoWorkerExecutor().execute(this::cleanupOldWorlds);
     }
 
     public BobbyConfig getConfig() {
@@ -257,13 +262,13 @@ public class Bobby implements ClientModInitializer {
 
             SimpleOption<Integer> viewDistance = client.options.getViewDistance();
             if (viewDistance.getCallbacks() instanceof SimpleOption.ValidatingIntSliderCallbacks callbacks) {
-                ValidatingIntSliderCallbacksAccessor callbacksAcc = (ValidatingIntSliderCallbacksAccessor)(Object) callbacks;
+                ValidatingIntSliderCallbacksAccessor callbacksAcc = (ValidatingIntSliderCallbacksAccessor) (Object) callbacks;
                 if (increaseOnly) {
                     callbacksAcc.setMaxInclusive(Math.max(callbacks.maxInclusive(), newMaxRenderDistance));
                 } else {
                     callbacksAcc.setMaxInclusive(newMaxRenderDistance);
                 }
-                SimpleOptionAccessor<Integer> optionAccessor = (SimpleOptionAccessor<Integer>)(Object) viewDistance;
+                SimpleOptionAccessor<Integer> optionAccessor = (SimpleOptionAccessor<Integer>) (Object) viewDistance;
                 optionAccessor.setCodec(callbacks.codec());
             }
         }
