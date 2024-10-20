@@ -81,7 +81,7 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         }
     }
 
-    @Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
+    @Inject(method = "loadChunkFromPacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;getIndex(II)I"))
     private void bobbyUnloadFakeChunk(int x, int z, PacketByteBuf buf, NbtCompound nbt, Consumer<ChunkData.BlockEntityVisitor> consumer, CallbackInfoReturnable<WorldChunk> cir) {
         if (bobbyChunkManager == null) {
             return;
@@ -98,7 +98,11 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             return;
         }
 
-        bobbyChunkManager.fingerprint(cir.getReturnValue());
+        WorldChunk chunk = cir.getReturnValue();
+        if (chunk == null) {
+            return; // can happen when server sends out-of-bounds chunk
+        }
+        bobbyChunkManager.fingerprint(chunk);
     }
 
     @Unique
