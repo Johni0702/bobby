@@ -1,3 +1,5 @@
+### 5.2.5-SNAPSHOT
+
 ### 5.2.4
 - Add support for Sodium 0.6.0 (#308)
 
