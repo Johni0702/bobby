@@ -45,7 +45,7 @@ public abstract class ClientPlayNetworkHandlerMixin implements ClientPlayNetwork
 
     // Once MC does actually load the light data, we can drop our manually kept light data, so it can be GCed.
     @Inject(method = "readLightData", at = @At("HEAD"))
-    private void storeInitialLightData(int chunkX, int chunkZ, LightData data, CallbackInfo ci) {
+    private void storeInitialLightData(int chunkX, int chunkZ, LightData data, boolean rebuildChunks, CallbackInfo ci) {
         WorldChunk chunk = this.world.getChunkManager().getChunk(chunkX, chunkZ, ChunkStatus.FULL, false);
         if (chunk == null || chunk instanceof FakeChunk) {
             return; // already unloaded, nothing to do

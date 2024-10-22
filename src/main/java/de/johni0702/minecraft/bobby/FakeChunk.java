@@ -52,7 +52,7 @@ public class FakeChunk extends WorldChunk {
         for (int y = getBottomSectionCoord(); y < getTopSectionCoord(); y++) {
             updateTaintedState(blockLightProvider, x, y, z, blockDelta);
             updateTaintedState(skyLightProvider, x, y, z, skyDelta);
-            worldRenderer.scheduleBlockRender(x, y, z);
+            worldRenderer.scheduleChunkRenders3x3x3(x, y, z);
         }
     }
 

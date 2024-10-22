@@ -15,6 +15,7 @@ import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -167,6 +168,18 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         }
 
         substituteFakeChunksForUnloadedRealOnes();
+    }
+
+    @Inject(method = "updateLoadDistance", at = @At(value = "FIELD", target = "Lnet/minecraft/client/world/ClientChunkManager;chunks:Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;", opcode = Opcodes.PUTFIELD, shift = At.Shift.AFTER))
+    private void reAddEmptyFakeChunks(CallbackInfo ci) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
+        for (WorldChunk chunk : bobbyChunkManager.getFakeChunks()) {
+            ChunkPos pos = chunk.getPos();
+            bobbyChunkManager.loadEmptySectionsOfFakeChunk(pos.x, pos.z, chunk);
+        }
     }
 
     @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)

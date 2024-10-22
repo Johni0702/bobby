@@ -3,7 +3,6 @@ package de.johni0702.minecraft.bobby.mixin;
 import de.johni0702.minecraft.bobby.ext.LightingProviderExt;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import net.minecraft.util.math.ChunkSectionPos;
 import net.minecraft.world.chunk.light.LightingProvider;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -27,8 +26,8 @@ public abstract class LightingProviderMixin implements LightingProviderExt {
     }
 
     @Inject(method = "isLightingEnabled", at = @At("HEAD"), cancellable = true)
-    private void bobby_getLightSection(ChunkSectionPos pos, CallbackInfoReturnable<Boolean> ci) {
-        if (bobbyActiveColumns.contains(pos.toChunkPos().toLong())) {
+    private void bobby_getLightSection(long sectionPos, CallbackInfoReturnable<Boolean> ci) {
+        if (bobbyActiveColumns.contains(sectionPos)) {
             ci.setReturnValue(true);
         }
     }
