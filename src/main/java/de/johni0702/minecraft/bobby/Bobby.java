@@ -82,7 +82,7 @@ public class Bobby implements ClientModInitializer {
         configReference.subscribe(new TaintChunksConfigHandler()::update);
         configReference.subscribe(new MaxRenderDistanceConfigHandler()::update);
 
-        Util.getIoWorkerExecutor().submit(this::cleanupOldWorlds);
+        Util.getIoWorkerExecutor().execute(this::cleanupOldWorlds);
     }
 
     public BobbyConfig getConfig() {
@@ -208,7 +208,7 @@ public class Bobby implements ClientModInitializer {
         private boolean wasEnabled = getConfig().isTaintFakeChunks();
 
         public void update(BobbyConfig config) {
-            client.submit(() -> setEnabled(config.isTaintFakeChunks()));
+            client.execute(() -> setEnabled(config.isTaintFakeChunks()));
         }
 
         private void setEnabled(boolean enabled) {
@@ -245,7 +245,7 @@ public class Bobby implements ClientModInitializer {
         }
 
         public void update(BobbyConfig config, boolean increaseOnly) {
-            client.submit(() -> setMaxRenderDistance(config.getMaxRenderDistance(), increaseOnly));
+            client.execute(() -> setMaxRenderDistance(config.getMaxRenderDistance(), increaseOnly));
         }
 
         @SuppressWarnings({"ConstantConditions", "unchecked"})

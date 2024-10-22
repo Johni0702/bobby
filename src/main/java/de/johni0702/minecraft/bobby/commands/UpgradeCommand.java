@@ -55,7 +55,7 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
                     });
                 }
             }
-            client.submit(() -> {
+            client.execute(() -> {
                 if (worlds != null) {
                     worlds.recheckChunks(world, chunkManager.bobby_getRealChunksTracker());
                 }
@@ -91,7 +91,7 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
                 nextReport = now.plus(3, ChronoUnit.SECONDS);
 
                 Text text = Text.translatable("bobby.upgrade.progress", this.done, this.total, this.worldIndex + 1, this.totalWorlds);
-                client.submit(() -> client.inGameHud.getChatHud().addMessage(text));
+                client.execute(() -> client.inGameHud.getChatHud().addMessage(text));
             }
         }
     }

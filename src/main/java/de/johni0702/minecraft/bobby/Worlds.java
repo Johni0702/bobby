@@ -150,7 +150,7 @@ public class Worlds implements AutoCloseable {
         if (!outdatedWorlds.isEmpty()) {
             Text text = translatable("bobby.upgrade.required");
             MinecraftClient client = MinecraftClient.getInstance();
-            client.submit(() -> client.inGameHud.getChatHud().addMessage(text));
+            client.execute(() -> client.inGameHud.getChatHud().addMessage(text));
         }
     }
 

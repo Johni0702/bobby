@@ -131,7 +131,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         if (nbt != null && nbt.getInt("DataVersion") != SharedConstants.getGameVersion().getSaveVersion().getId()) {
             if (sentUpgradeNotification.compareAndSet(false, true)) {
                 MinecraftClient client = MinecraftClient.getInstance();
-                client.submit(() -> {
+                client.execute(() -> {
                     Text text = Text.translatable(writeable ? "bobby.upgrade.required" : "bobby.upgrade.fallback_world");
                     client.inGameHud.getChatHud().addMessage(text);
                 });
@@ -171,7 +171,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
         try {
             for (ChunkPos chunkPos : chunks) {
-                workExecutor.submit(() -> {
+                workExecutor.execute(() -> {
                     NbtCompound nbt;
                     try {
                         nbt = io.readChunkData(chunkPos).join().orElse(null);
