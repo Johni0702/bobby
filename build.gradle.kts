@@ -1,5 +1,5 @@
 plugins {
-	id("fabric-loom") version "1.8.8"
+	id("fabric-loom") version "1.8.9"
 	id("maven-publish")
 	id("com.github.breadmoirai.github-release") version "2.2.12"
 	id("com.matthewprenger.cursegradle") version "1.4.0"
@@ -45,7 +45,6 @@ dependencies {
 	val configurateVersion: String by project
 	val geantyrefVersion: String by project
 	val hoconVersion: String by project
-	val sodium05Version: String by project
 	val sodium06Version: String by project
 	val starlightVersion: String by project
 	val confabricateVersion: String by project
@@ -64,7 +63,6 @@ dependencies {
 	include("io.leangen.geantyref:geantyref:$geantyrefVersion")
 	include("com.typesafe:config:$hoconVersion")
 
-	"modSodium05CompileOnly"("maven.modrinth:sodium:$sodium05Version")
 	"modSodium06CompileOnly"("maven.modrinth:sodium:$sodium06Version")
 	modCompileOnly("maven.modrinth:starlight:$starlightVersion")
 	modCompileOnly("ca.stellardrift:confabricate:$confabricateVersion")

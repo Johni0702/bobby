@@ -15,11 +15,10 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
     private static final Logger LOGGER = LoggerFactory.getLogger("Bobby/Mixin");
 
     private final boolean hasSodium = FabricLoader.getInstance().isModLoaded("sodium");
-    private final boolean hasSodium05 = hasSodium && hasClass("me.jellysquid.mods.sodium.client.render.chunk.map.ChunkTrackerHolder");
     private final boolean hasSodium06 = hasSodium && hasClass("net.caffeinemc.mods.sodium.client.render.chunk.map.ChunkTrackerHolder");
     {
-        if (hasSodium && !hasSodium05 && !hasSodium06) {
-            LOGGER.error("Sodium version appears to be neither compatible with 0.5 nor 0.6");
+        if (hasSodium && !hasSodium06) {
+            LOGGER.error("Sodium version appears to be neither compatible with 0.6");
         }
     }
     private final boolean hasStarlight = FabricLoader.getInstance().isModLoaded("starlight");
@@ -37,9 +36,6 @@ public class MixinConfigPlugin implements IMixinConfigPlugin {
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
         if (!hasStarlight && targetClassName.startsWith("ca.spottedleaf.starlight.")) {
             return false;
-        }
-        if (mixinClassName.contains(".sodium05.")) {
-            return hasSodium05;
         }
         if (mixinClassName.contains(".sodium06.")) {
             return hasSodium06;
