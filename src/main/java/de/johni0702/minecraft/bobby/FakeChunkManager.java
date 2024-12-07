@@ -99,6 +99,9 @@ public class FakeChunkManager {
         BobbyConfig config = Bobby.getInstance().getConfig();
 
         String serverName = getCurrentWorldOrServerName(((ClientWorldAccessor) world).getNetworkHandler());
+        if (serverName.isEmpty()) {
+            serverName = "<empty>";
+        }
         long seedHash = ((BiomeAccessAccessor) world.getBiomeAccess()).getSeed();
         RegistryKey<World> worldKey = world.getRegistryKey();
         Identifier worldId = worldKey.getValue();
