@@ -3,7 +3,7 @@
   "bobby.upgrade.fallback_world": "[Bobby] Votre monde de secours contient des données d'une ancienne version de Minecraft. Mettez-le à jour depuis le menu \"Solo\" en utilisant l'option \"Modifier\" -> \"Optimiser le monde\".",
   "bobby.upgrade.not_enabled": "Bobby n'est pas activé pour ce monde.",
   "bobby.upgrade.begin": "[Bobby] Mise à jour des données du monde vers la version actuelle de Minecraft. Cela peut prendre quelques minutes.",
-  "bobby.upgrade.progress": "[Bobby] %d chunks mis à jour sur un total estimé de %d.",
+  "bobby.upgrade.progress": "[Bobby] %d chunks mis à jour sur un total estimé de %d (monde %d sur %d).",
   "bobby.upgrade.done": "[Bobby] Mise à jour des données du monde terminée. Vos anciens chunks devraient maintenant être visibles à nouveau.",
 
   "title.bobby.config": "Configuration de Bobby",
