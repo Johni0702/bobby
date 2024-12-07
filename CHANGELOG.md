@@ -1,3 +1,6 @@
+### 5.2.6
+- Update to Minecraft 1.21.4
+
 ### 5.2.5
 - Update to Minecraft 1.21.2
 - Fix missing fake chunks and "Network Protocol Error"s when server sends out-of-bounds chunk (#313)
