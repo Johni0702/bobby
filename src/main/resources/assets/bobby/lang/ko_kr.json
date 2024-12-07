@@ -1,0 +1,27 @@
+{
+  "bobby.upgrade.required": "[Bobby] 이 월드에는 이전 마인크래프트 버전의 데이터가 포함되어 있습니다. `/bobby upgrade`를 실행하여 업그레이드하세요.",
+  "bobby.upgrade.fallback_world": "[Bobby] 대체 월드에는 이전 마인크래프트 버전의 데이터가 포함되어 있습니다. \"싱글 플레이어\" 메뉴에서 \"편집\" -> \"월드 최적화\" 옵션을 사용하여 업그레이드하세요.",
+  "bobby.upgrade.not_enabled": "Bobby가 이 월드에서 활성화되어 있지 않습니다.",
+  "bobby.upgrade.begin": "[Bobby] 월드 데이터를 현재 Minecraft 버전으로 업그레이드합니다. 몇 분 정도 걸릴 수 있습니다.",
+  "bobby.upgrade.progress": "[Bobby] %d개 중 (추정) %d개 청크(월드 %d 중 %d개)를 업그레이드했습니다.",
+  "bobby.upgrade.done": "[Bobby] 월드 데이터 업그레이드가 완료되었습니다. 이제 이전 청크를 다시 볼 수 있습니다.",
+
+  "bobby.dynamic_multi_world.not_enabled": "[Bobby] 동적 세계 관리가 활성화되지 않았습니다.",
+
+  "title.bobby.config": "Bobby 설정",
+  "option.bobby.enabled": "활성화됨",
+  "option.bobby.dynamic_multi_world": "동적 세계 관리",
+  "tooltip.option.bobby.dynamic_multi_world": "여러 개의 동일한 이름을 가진 세계가 있는 서버에 대한 지원을 활성화합니다.\n\n활성화되면 각 세계 변경 시 새 로컬 캐시가 시작됩니다. 두 캐시에 비슷한 콘텐츠가 있는 청크가 충분히 있으면 자동으로 병합됩니다.\n이것은 Bobby가 캐시된 청크를 로드하기 전에 약간 돌아다녀야 할 수도 있다는 것을 의미합니다.(예: 평평한 세계) 세계에 식별 정보가 거의 없는 경우입니다.\n\nBobby가 캐시에 병합되는 것을 방지하기 위해 여러 세계로 구성된 기존 캐시를 삭제해야 할 수도 있습니다.\n기존 캐시를 활성화한 후 `/bobby 업그레이드`가 필요합니다.",
+  "option.bobby.no_block_entities": "블록 엔티티 비활성화",
+  "tooltip.option.bobby.no_block_entities": "가짜 청크에 블록 엔티티(상자, 배너 등)를 로드하지 않습니다.\n엔티티는 매 틱마다 업데이트되면서, 성능에 영향을 끼칠 수 있습니다.\n\n블록 엔티티의 렌더링 거리는 일반적으로 서버 렌더링 거리보다 작기 때문에 기본적으로 활성화됩니다.",
+  "option.bobby.taint_fake_chunks": "가짜 오염  청크",
+  "tooltip.option.bobby.taint_fake_chunks": "가짜 청크의 밝기를 줄여 실제 청크와 구별할 수 있게 만듭니다.",
+  "option.bobby.unload_delay": "청크 언로드 지연(초)",
+  "tooltip.option.bobby.unload_delay": "시야 거리 밖에 있는 청크의 언로드를 지연합니다.\n잠시 지역을 벗어날 때(컷씬 등).\n차원이 바뀌면 바로 언로드됩니다.",
+  "option.bobby.delete_unused_regions_after_days": "사용하지 않는 구역 정리(일수)",
+  "tooltip.option.bobby.delete_unused_regions_after_days": "X일 동안 로드되지 않으면 캐시에서 구역을 삭제합니다.\n\n서버에서 연결을 끊을 때마다 지정된 세계의 캐시가 정리됩니다.\n게임이 시작되고 X일 동안 방문하지 않으면 전체 세계가 정리됩니다.\n\n-1로 설정해 비활성화하세요.\n연결이 끊길 때마다 모든 것을 정리하려면 0으로 설정합니다.",
+  "option.bobby.max_render_distance": "최대 렌더링 거리",
+  "tooltip.option.bobby.max_render_distance": "렌더링 거리에 대해 설정 가능한 최대값을 변경합니다.\n\n소듐 모드가 필요합니다.",
+  "option.bobby.view_distance_overwrite": "싱글 플레이어 서버 뷰 거리",
+  "tooltip.option.bobby.view_distance_overwrite": "통합 서버의 뷰 거리를 덮어씁니다.\n이렇게 하면 Bobby가 싱글 플레이어에서 유용하게 사용할 수 있습니다.\n\n0일 때 비활성화됩니다.\nBobby는 이 기능이 활성화된 경우에만 싱글 플레이어에서 활성화됩니다.\n활성화/비활성화하려면 다시 접속해야 합니다."
+}
