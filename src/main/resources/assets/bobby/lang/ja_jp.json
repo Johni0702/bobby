@@ -1,0 +1,27 @@
+{
+  "bobby.upgrade.required": "[Bobby] このワールドには古いバージョンの Minecraft のデータが含まれています。アップグレードするには `/bobby upgrade` を実行してください。",
+  "bobby.upgrade.fallback_world": "[Bobby] フォールバック ワールドには、Minecraft の古いバージョンのデータが含まれています。\"シングルプレイ\" メニューから \"編集\" -> \"ワールドを最適化\" オプションを使用してアップグレードしてください。",
+  "bobby.upgrade.not_enabled": "Bobbyはこのワールドでは使用できません",
+  "bobby.upgrade.begin": "[Bobby] ワールドデータを現在のMinecraftバージョンにアップグレードします。数分かかる場合があります。",
+  "bobby.upgrade.progress": "[Bobby] %d チャンク (推定) のうち %d チャンクをアップグレードしました。(ワールド %d個中 %d個目)",
+  "bobby.upgrade.done": "[Bobby] ワールドデータのアップグレードが完了しました。古いチャンクが再び表示されるようになりました。",
+
+  "bobby.dynamic_multi_world.not_enabled": "[Bobby] ダイナミック・ワールド・マネジメントが有効ではありません",
+
+  "title.bobby.config": "Bobbyの設定",
+  "option.bobby.enabled": "有効化",
+  "option.bobby.dynamic_multi_world": "ダイナミック・ワールド・マネジメント",
+  "tooltip.option.bobby.dynamic_multi_world": "同じ名前の複数のワールドを持つサーバーのサポートを有効にします。\n\n有効にすると、ワールドが変更されるたびに新しいローカルキャッシュが開始されます。\n2つのキャッシュに同様のコンテンツを持つチャンクが十分にある場合、それらは自動的にマージされます。\nつまり、ワールドに識別情報がほとんどない場合(平坦なワールドなど)、Bobbyがキャッシュされたチャンクを読み込む前に、\n少し歩き回らなければならない場合があります。\n\n既存のキャッシュが複数のワールドで構成されている場合は、Bobbyがそのキャッシュにマージされないようにするために、\n既存のキャッシュを削除する必要がある場合があります。\n既存のキャッシュを有効にした後、`/bobby upgrade` が必要です。",
+  "option.bobby.no_block_entities": "ブロックエンティティを無効にする",
+  "tooltip.option.bobby.no_block_entities": "ブロックエンティティ (チェストなど) を偽のチャンクにロードしません。\nこれらはティックごとに更新する必要があり、累積する可能性があります。\n\nブロックエンティティの描画距離は通常、サーバーの描画距離よりも小さいため、デフォルトで有効になっています。",
+  "option.bobby.taint_fake_chunks": "偽のチャンクを視覚化する",
+  "tooltip.option.bobby.taint_fake_chunks": "偽のチャンクの光レベルを下げることで、本物のチャンクとの違いを識別できるようする。",
+  "option.bobby.unload_delay": "チャンクのアンロードを遅延させる（秒）",
+  "tooltip.option.bobby.unload_delay": "描画距離外のチャンクのアンロードを遅らせます。\n一瞬エリアを離れるときにすべてのチャンクを再ロードする必要がなくなります (カットシーンなど)。\nディメンション間では機能しません。",
+  "option.bobby.delete_unused_regions_after_days": "未使用地域のクリーンアップ（日数）",
+  "tooltip.option.bobby.delete_unused_regions_after_days": "X 日間ロードされていないリージョンをキャッシュから削除します。\n\nサーバーから切断するたびに、特定のワールドのキャッシュがクリーンアップされます。\nゲームが起動し、X 日間アクセスしていないワールド全体がクリーンアップされます。\n\n無効にするには -1 に設定します。\n切断するたびにすべてをクリーンアップするには 0 に設定します。",
+  "option.bobby.max_render_distance": "最大描画距離",
+  "tooltip.option.bobby.max_render_distance": "描画距離に設定可能な最大値を変更します。\n\nSodium が必要です。",
+  "option.bobby.view_distance_overwrite": "シングルプレーヤーのサーバー表示距離",
+  "tooltip.option.bobby.view_distance_overwrite": "統合サーバーの描画距離を上書きします。\nこれにより、シングルプレイヤーで Bobby が動作します。\n\n0 の場合は無効です。\nこれが有効な場合のみ、Bobby はシングルプレイヤーで動作します。\n有効/無効を切り替えるには再ログインが必要です。"
+}
