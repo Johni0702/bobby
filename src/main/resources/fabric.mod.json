@@ -28,7 +28,6 @@
   },
   "mixins": [
     "bobby.mixins.json",
-    "bobby-sodium05-compat.mixins.json",
     "bobby-sodium06-compat.mixins.json"
   ],
 
@@ -41,7 +40,7 @@
     "modmenu": "^${modMenuVersion}"
   },
   "breaks": {
-    "sodium": "<0.5.1"
+    "sodium": "<0.6.0"
   },
 
   "custom": {
