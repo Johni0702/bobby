@@ -28,20 +28,19 @@
   },
   "mixins": [
     "bobby.mixins.json",
-    "bobby-sodium05-compat.mixins.json",
     "bobby-sodium06-compat.mixins.json"
   ],
 
   "depends": {
-    "fabricloader": ">=0.15.11",
-    "minecraft": "~1.21"
+    "fabricloader": ">=0.16.9",
+    "minecraft": "~1.21.4"
   },
   "suggests": {
     "cloth-config2": "^${clothConfigVersion}",
     "modmenu": "^${modMenuVersion}"
   },
   "breaks": {
-    "sodium": "<0.5.1"
+    "sodium": "<0.6.0"
   },
 
   "custom": {

@@ -1,3 +1,12 @@
+### 5.2.6
+- Update to Minecraft 1.21.4
+- Fix "Network Protocol Error" when server sends block updates for chunks it has already unloaded (#341)
+- Add Korean, Japanese, German, and French translations, updated Traditional Chinese translation
+
+### 5.2.5
+- Update to Minecraft 1.21.2
+- Fix missing fake chunks and "Network Protocol Error"s when server sends out-of-bounds chunk (#313)
+
 ### 5.2.4
 - Add support for Sodium 0.6.0 (#308)
 

@@ -69,12 +69,12 @@ public class ChunkSerializer {
 
     public static NbtCompound serialize(WorldChunk chunk, LightingProvider lightingProvider) {
         DynamicRegistryManager registryManager = chunk.getWorld().getRegistryManager();
-        Registry<Biome> biomeRegistry = registryManager.get(RegistryKeys.BIOME);
+        Registry<Biome> biomeRegistry = registryManager.getOrThrow(RegistryKeys.BIOME);
         Codec<ReadableContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createReadableContainerCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.getEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
-                biomeRegistry.entryOf(BiomeKeys.PLAINS)
+                biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow()
         );
 
         ChunkPos chunkPos = chunk.getPos();
@@ -163,12 +163,12 @@ public class ChunkSerializer {
             LOGGER.error("Chunk file at {} is in the wrong location; relocating. (Expected {}, got {})", pos, pos, chunkPos);
         }
 
-        Registry<Biome> biomeRegistry = world.getRegistryManager().get(RegistryKeys.BIOME);
+        Registry<Biome> biomeRegistry = world.getRegistryManager().getOrThrow(RegistryKeys.BIOME);
         Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createPalettedContainerCodec(
                 biomeRegistry.getIndexedEntries(),
                 biomeRegistry.getEntryCodec(),
                 PalettedContainer.PaletteProvider.BIOME,
-                biomeRegistry.entryOf(BiomeKeys.PLAINS)
+                biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow()
         );
 
         NbtList sectionsTag = level.getList("sections", NbtElement.COMPOUND_TYPE);
@@ -213,7 +213,7 @@ public class ChunkSerializer {
                             .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
                             .getOrThrow();
                 } else {
-                    biomes = new PalettedContainer<>(biomeRegistry.getIndexedEntries(), biomeRegistry.entryOf(BiomeKeys.PLAINS), PalettedContainer.PaletteProvider.BIOME);
+                    biomes = new PalettedContainer<>(biomeRegistry.getIndexedEntries(), biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow(), PalettedContainer.PaletteProvider.BIOME);
                 }
 
                 ChunkSection chunkSection = new ChunkSection(blocks, biomes);
@@ -302,7 +302,7 @@ public class ChunkSerializer {
             ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
             ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
 
-            lightingProviderExt.bobby_enabledColumn(pos.toLong());
+            lightingProviderExt.bobby_enabledColumn(ChunkSectionPos.withZeroY(pos.x, pos.z));
 
             for (int i = -1; i < chunkSections.length + 1; i++) {
                 int y = world.sectionIndexToCoord(i);

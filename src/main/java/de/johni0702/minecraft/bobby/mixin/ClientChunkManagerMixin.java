@@ -15,6 +15,7 @@ import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jetbrains.annotations.Nullable;
+import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -81,7 +82,7 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         }
     }
 
-    @Inject(method = "loadChunkFromPacket", at = @At("HEAD"))
+    @Inject(method = "loadChunkFromPacket", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;getIndex(II)I"))
     private void bobbyUnloadFakeChunk(int x, int z, PacketByteBuf buf, NbtCompound nbt, Consumer<ChunkData.BlockEntityVisitor> consumer, CallbackInfoReturnable<WorldChunk> cir) {
         if (bobbyChunkManager == null) {
             return;
@@ -98,7 +99,11 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
             return;
         }
 
-        bobbyChunkManager.fingerprint(cir.getReturnValue());
+        WorldChunk chunk = cir.getReturnValue();
+        if (chunk == null) {
+            return; // can happen when server sends out-of-bounds chunk
+        }
+        bobbyChunkManager.fingerprint(chunk);
     }
 
     @Unique
@@ -163,6 +168,18 @@ public abstract class ClientChunkManagerMixin implements ClientChunkManagerExt {
         }
 
         substituteFakeChunksForUnloadedRealOnes();
+    }
+
+    @Inject(method = "updateLoadDistance", at = @At(value = "FIELD", target = "Lnet/minecraft/client/world/ClientChunkManager;chunks:Lnet/minecraft/client/world/ClientChunkManager$ClientChunkMap;", opcode = Opcodes.PUTFIELD, shift = At.Shift.AFTER))
+    private void reAddEmptyFakeChunks(CallbackInfo ci) {
+        if (bobbyChunkManager == null) {
+            return;
+        }
+
+        for (WorldChunk chunk : bobbyChunkManager.getFakeChunks()) {
+            ChunkPos pos = chunk.getPos();
+            bobbyChunkManager.loadEmptySectionsOfFakeChunk(pos.x, pos.z, chunk);
+        }
     }
 
     @Inject(method = "getDebugString", at = @At("RETURN"), cancellable = true)

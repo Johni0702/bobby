@@ -14,6 +14,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMaps;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectIterator;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayNetworkHandler;
@@ -28,8 +29,11 @@ import net.minecraft.util.Identifier;
 import net.minecraft.util.Util;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.ChunkSectionPos;
+import net.minecraft.util.profiler.Profiler;
+import net.minecraft.util.profiler.Profilers;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.ChunkSection;
 import net.minecraft.world.chunk.ChunkStatus;
 import net.minecraft.world.chunk.WorldChunk;
 import net.minecraft.world.chunk.light.LightingProvider;
@@ -95,6 +99,9 @@ public class FakeChunkManager {
         BobbyConfig config = Bobby.getInstance().getConfig();
 
         String serverName = getCurrentWorldOrServerName(((ClientWorldAccessor) world).getNetworkHandler());
+        if (serverName.isEmpty()) {
+            serverName = "<empty>";
+        }
         long seedHash = ((BiomeAccessAccessor) world.getBiomeAccess()).getSeed();
         RegistryKey<World> worldKey = world.getRegistryKey();
         Identifier worldId = worldKey.getValue();
@@ -314,9 +321,10 @@ public class FakeChunkManager {
             // Done loading
             loadingJobsIter.remove();
 
-            client.getProfiler().push("loadFakeChunk");
+            Profiler profiler = Profilers.get();
+            profiler.push("loadFakeChunk");
             loadingJob.complete();
-            client.getProfiler().pop();
+            profiler.pop();
 
             if (!shouldKeepTicking.getAsBoolean()) {
                 break;
@@ -362,6 +370,7 @@ public class FakeChunkManager {
     public void load(int x, int z, WorldChunk chunk) {
         fakeChunks.put(ChunkPos.toLong(x, z), chunk);
 
+        loadEmptySectionsOfFakeChunk(x, z, chunk);
         world.resetChunkColor(new ChunkPos(x, z));
 
         for (int i = world.getBottomSectionCoord(); i < world.getTopSectionCoord(); i++) {
@@ -369,6 +378,17 @@ public class FakeChunkManager {
         }
 
         clientChunkManagerExt.bobby_onFakeChunkAdded(x, z);
+    }
+
+    public void loadEmptySectionsOfFakeChunk(int x, int z, WorldChunk chunk) {
+        LongOpenHashSet emptySections = clientChunkManager.getActiveSections();
+        ChunkSection[] chunkSections = chunk.getSectionArray();
+        for (int i = 0; i < chunkSections.length; i++) {
+            ChunkSection chunkSection = chunkSections[i];
+            if (chunkSection.isEmpty()) {
+                emptySections.add(ChunkSectionPos.asLong(x, chunk.sectionIndexToCoord(i), z));
+            }
+        }
     }
 
     public boolean unload(int x, int z, boolean willBeReplaced) {
@@ -383,7 +403,7 @@ public class FakeChunkManager {
             ChunkLightProviderExt blockLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.BLOCK));
             ChunkLightProviderExt skyLightProvider = ChunkLightProviderExt.get(lightingProvider.get(LightType.SKY));
 
-            lightingProviderExt.bobby_disableColumn(chunkPos);
+            lightingProviderExt.bobby_disableColumn(ChunkSectionPos.withZeroY(x, z));
 
             // See the comment above the bobby_queueUnloadFakeLightDataTask implementation
             Runnable unloadLightData = () -> {
@@ -409,6 +429,12 @@ public class FakeChunkManager {
                 });
             } else {
                 unloadLightData.run();
+
+                LongOpenHashSet emptySections = clientChunkManager.getActiveSections();
+                ChunkSection[] chunkSections = chunk.getSectionArray();
+                for (int i = 0; i < chunkSections.length; i++) {
+                    emptySections.remove(ChunkSectionPos.asLong(x, chunk.sectionIndexToCoord(i), z));
+                }
             }
 
             clientChunkManagerExt.bobby_onFakeChunkRemoved(x, z, willBeReplaced);

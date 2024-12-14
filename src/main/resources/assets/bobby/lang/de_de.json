@@ -1,0 +1,27 @@
+{
+  "bobby.upgrade.required": "[Bobby] Diese Welt enthält Daten aus einer alten Version von Minecraft. Führe `/bobby upgrade` aus, um sie zu aktualisieren.",
+  "bobby.upgrade.fallback_world": "[Bobby] Deine Reserve-Welt enthält Daten aus einer alten Version von Minecraft. Aktualisieren Sie sie über das Menü \"Einzelspieler\" mit der Option \"Bearbeiten\" -> \"Welt optimieren\".",
+  "bobby.upgrade.not_enabled": "Bobby ist auf dieser Welt nicht eingeschaltet.",
+  "bobby.upgrade.begin": "[Bobby] Aktualisierung der Weltdaten auf die aktuelle Minecraft-Version. Dies kann ein paar Minuten dauern.",
+  "bobby.upgrade.progress": "[Bobby] %d Aktualisiert von (geschätzt) %d Chunks (Welt %d von %d).",
+  "bobby.upgrade.done": "[Bobby] Aktualisierung der Weltdaten abgeschlossen. Ihre alten Chunks sollten nun wieder sichtbar sein.",
+
+  "bobby.dynamic_multi_world.not_enabled": "[Bobby] Die dynamische Weltverwaltung ist nicht aktiviert.",
+
+  "title.bobby.config": "Bobby Konfiguration",
+  "option.bobby.enabled": "Aktiviert",
+  "option.bobby.dynamic_multi_world": "Dynamisches Weltmanagement",
+  "tooltip.option.bobby.dynamic_multi_world": "Ermöglicht die Unterstützung von Servern mit mehreren gleichnamigen Welten.\n\nWenn diese Option aktiviert ist, wird bei jedem Weltwechsel ein neuer lokaler Cache angelegt. Wenn diese Option aktiviert ist, wird bei jedem Weltwechsel ein neuer lokaler Cache angelegt. Wenn in zwei Caches genügend Chunks mit ähnlichem Inhalt vorhanden sind, werden sie automatisch zusammengeführt. Das bedeutet, dass du möglicherweise ein wenig herumlaufen musst, bevor Bobby Chunks in den Cache lädt, wenn es in deiner Welt nur wenige identifizierende Informationen gibt (z. B. flache Welten).\n\nEs kann sein, dass du deinen bestehenden Cache löschen musst, wenn er aus mehreren Welten besteht, um zu verhindern, dass Bobby darin zusammengeführt wird. Nach der Aktivierung mit dem bestehenden Cache ist ein `/bobby upgrade` erforderlich.",
+  "option.bobby.no_block_entities": "Block Entites deaktivieren",
+  "tooltip.option.bobby.no_block_entities": "Block-Entities (z.B. Truhen) nicht in Fake-Chunks laden. Diese müssen bei jedem Tick aktualisiert werden, was sich summieren kann. Standardmäßig aktiviert, da die Renderdistanz für Block-Entities in der Regel ohnehin kleiner ist als die Server-View-Distanz.",
+  "option.bobby.taint_fake_chunks": "Verfälsche Fake Chunks",
+  "tooltip.option.bobby.taint_fake_chunks": "Verringert die Licht-level in verfälschten Chunks, so dass sie von echten Chunks unterschieden werden können.",
+  "option.bobby.unload_delay": "Chunk-Entladeverzögerung (Sekunden)",
+  "tooltip.option.bobby.unload_delay": "Verzögert das Entladen von Chunks, die sich außerhalb des Sichtbereichs befinden.\nErspart das erneute Laden aller Chunks, wenn ein Bereich für einen kurzen Moment verlassen wird (z. B. bei geschnittenen Szenen).\nWirkt nicht dimensionsübergreifend.",
+  "option.bobby.delete_unused_regions_after_days": "Bereinigung nicht genutzter Regionen (Tage)",
+  "tooltip.option.bobby.delete_unused_regions_after_days": "Regionen aus dem Cache löschen, wenn sie X Tage lang nicht geladen wurden.\n\nDer Cache für eine bestimmte Welt wird immer dann bereinigt, wenn Sie die Verbindung zum Server trennen.\nEntfernte Welten werden bereinigt, wenn das Spiel gestartet wird und Sie sie X Tage lang nicht besucht haben.\n\nSetzen Sie den Wert auf -1, um sie zu deaktivieren.\nSetzen Sie den Wert auf 0, um alles nach jedem Trennen der Verbindung zu bereinigen.",
+  "option.bobby.max_render_distance": "Maximaler Render-Distanz",
+  "tooltip.option.bobby.max_render_distance": "Ändert den maximal konfigurierbaren Wert für die Renderdistanz.\n\nErfordert Sodium.",
+  "option.bobby.view_distance_overwrite": "Einzelspieler Server Sichtweite",
+  "tooltip.option.bobby.view_distance_overwrite": "Überschreibt die Sichtweite des integrierten Servers.\nDamit kann Bobby im Einzelspieler nützlich sein.\n\nDeaktiviert, wenn er auf 0 steht.\nBobby ist im Einzelspieler nur aktiv, wenn dies aktiviert ist.\nErfordert eine erneute Anmeldung zum De-/Aktivieren."
+}

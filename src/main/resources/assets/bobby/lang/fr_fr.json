@@ -1,0 +1,23 @@
+{
+  "bobby.upgrade.required": "[Bobby] Ce monde contient des données d'une ancienne version de Minecraft. Exécutez `/bobby upgrade` pour le mettre à jour.",
+  "bobby.upgrade.fallback_world": "[Bobby] Votre monde de secours contient des données d'une ancienne version de Minecraft. Mettez-le à jour depuis le menu \"Solo\" en utilisant l'option \"Modifier\" -> \"Optimiser le monde\".",
+  "bobby.upgrade.not_enabled": "Bobby n'est pas activé pour ce monde.",
+  "bobby.upgrade.begin": "[Bobby] Mise à jour des données du monde vers la version actuelle de Minecraft. Cela peut prendre quelques minutes.",
+  "bobby.upgrade.progress": "[Bobby] %d chunks mis à jour sur un total estimé de %d (monde %d sur %d).",
+  "bobby.upgrade.done": "[Bobby] Mise à jour des données du monde terminée. Vos anciens chunks devraient maintenant être visibles à nouveau.",
+
+  "title.bobby.config": "Configuration de Bobby",
+  "option.bobby.enabled": "Activé",
+  "option.bobby.no_block_entities": "Désactiver les Entités de Blocs",
+  "tooltip.option.bobby.no_block_entities": "Ne pas charger les entités de blocs (par exemple, les coffres) dans les faux chunks.\nCelles-ci doivent être mises à jour à chaque tick, ce qui peut s'accumuler.\n\nActivé par défaut car la distance de rendu pour les entités de blocs est généralement plus petite que la distance de vue du serveur.",
+  "option.bobby.taint_fake_chunks": "Souiller les Faux Chunks",
+  "tooltip.option.bobby.taint_fake_chunks": "Réduit les niveaux de lumière dans les faux chunks pour que vous puissiez les différencier des vrais.",
+  "option.bobby.unload_delay": "Délai de Déchargement des Chunks (Secondes)",
+  "tooltip.option.bobby.unload_delay": "Retarde le déchargement des chunks qui sont en dehors de votre distance de vue.\nÉvite de devoir recharger tous les chunks lorsque\nvous quittez une zone pendant un court moment (par exemple, les cinématiques).\nNe fonctionne pas entre les dimensions.",
+  "option.bobby.delete_unused_regions_after_days": "Nettoyer les Régions Inutilisées (Jours)",
+  "tooltip.option.bobby.delete_unused_regions_after_days": "Supprime les régions du cache lorsqu'elles n'ont pas été chargées depuis X jours.\n\nLe cache pour un monde donné est nettoyé chaque fois que vous vous déconnectez du serveur.\nLes mondes entiers sont nettoyés lorsque le jeu démarre et que vous ne les avez pas visités depuis X jours.\n\nRéglé sur -1 pour désactiver.\nRéglé sur 0 pour nettoyer tout après chaque déconnexion.",
+  "option.bobby.max_render_distance": "Distance de Rendu Maximale",
+  "tooltip.option.bobby.max_render_distance": "Modifie la valeur maximale configurable pour la Distance de Rendu.\n\nNécessite Sodium.",
+  "option.bobby.view_distance_overwrite": "Distance de Vue du Serveur Solo",
+  "tooltip.option.bobby.view_distance_overwrite": "Écrase la distance de vue du serveur intégré.\nCela permet à Bobby d'être utile en solo.\n\nDésactivé lorsque la valeur est à 0.\nBobby est actif en solo uniquement si cette option est activée.\nNécessite une reconnexion pour activer ou désactiver."
+}

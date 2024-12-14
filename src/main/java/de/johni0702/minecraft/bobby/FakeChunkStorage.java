@@ -117,7 +117,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         if (lastAccess != null) {
             lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
         }
-        setNbt(pos, chunk);
+        setNbt(pos, () -> chunk);
     }
 
     public CompletableFuture<Optional<NbtCompound>> loadTag(ChunkPos pos) {
@@ -131,9 +131,9 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         if (nbt != null && nbt.getInt("DataVersion") != SharedConstants.getGameVersion().getSaveVersion().getId()) {
             if (sentUpgradeNotification.compareAndSet(false, true)) {
                 MinecraftClient client = MinecraftClient.getInstance();
-                client.submit(() -> {
+                client.execute(() -> {
                     Text text = Text.translatable(writeable ? "bobby.upgrade.required" : "bobby.upgrade.fallback_world");
-                    client.submit(() -> client.inGameHud.getChatHud().addMessage(text));
+                    client.inGameHud.getChatHud().addMessage(text);
                 });
             }
             return null;
@@ -171,7 +171,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
 
         try {
             for (ChunkPos chunkPos : chunks) {
-                workExecutor.submit(() -> {
+                workExecutor.execute(() -> {
                     NbtCompound nbt;
                     try {
                         nbt = io.readChunkData(chunkPos).join().orElse(null);
