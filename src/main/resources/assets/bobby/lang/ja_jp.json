@@ -3,7 +3,7 @@
   "bobby.upgrade.fallback_world": "[Bobby] フォールバック ワールドには、Minecraft の古いバージョンのデータが含まれています。\"シングルプレイ\" メニューから \"編集\" -> \"ワールドを最適化\" オプションを使用してアップグレードしてください。",
   "bobby.upgrade.not_enabled": "Bobbyはこのワールドでは使用できません",
   "bobby.upgrade.begin": "[Bobby] ワールドデータを現在のMinecraftバージョンにアップグレードします。数分かかる場合があります。",
-  "bobby.upgrade.progress": "[Bobby] %d チャンクをアップグレードしました。 合計チャンク数は推定 %d です (全 %d ワールド中 %d ワールド目)",
+  "bobby.upgrade.progress": "[Bobby] %d チャンクをアップグレードしました。 合計チャンク数は推定 %d チャンクです (全 %d ワールド中 %d ワールド目)",
   "bobby.upgrade.done": "[Bobby] ワールドデータのアップグレードが完了しました。古いチャンクが再び表示されるようになりました。",
 
   "bobby.dynamic_multi_world.not_enabled": "[Bobby] ダイナミック・ワールド・マネジメントが有効ではありません",
