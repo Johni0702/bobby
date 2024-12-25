@@ -3,7 +3,7 @@
   "bobby.upgrade.fallback_world": "[Bobby] 대체 월드에는 이전 마인크래프트 버전의 데이터가 포함되어 있습니다. 메인 메뉴에서 \"싱글플레이\" -> \"편집\" -> \"월드 최적화\" 옵션을 사용하여 업그레이드하세요.",
   "bobby.upgrade.not_enabled": "Bobby가 이 월드에서 활성화되어 있지 않습니다.",
   "bobby.upgrade.begin": "[Bobby] 월드 데이터를 현재 Minecraft 버전으로 업그레이드합니다. 몇 분 정도 걸릴 수 있습니다.",
-  "bobby.upgrade.progress": "[Bobby] %d개 중 (추정) %d개 청크(월드 %d 중 %d개)를 업그레이드했습니다.",
+  "bobby.upgrade.progress": "[Bobby] %d 청크가 (추정) %d개 청크중에서(월드 %d 중 %d개) 업그레이드되었습니다.",
   "bobby.upgrade.done": "[Bobby] 월드 데이터 업그레이드가 완료되었습니다. 이제 이전 청크를 다시 볼 수 있습니다.",
 
   "bobby.dynamic_multi_world.not_enabled": "[Bobby] 동적 세계 관리가 활성화되지 않았습니다.",
