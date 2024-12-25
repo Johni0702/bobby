@@ -1,6 +1,6 @@
 {
   "bobby.upgrade.required": "[Bobby] 이 월드에는 이전 마인크래프트 버전의 데이터가 포함되어 있습니다. `/bobby upgrade`를 실행하여 업그레이드하세요.",
-  "bobby.upgrade.fallback_world": "[Bobby] 대체 월드에는 이전 마인크래프트 버전의 데이터가 포함되어 있습니다. \"싱글 플레이어\" 메뉴에서 \"편집\" -> \"월드 최적화\" 옵션을 사용하여 업그레이드하세요.",
+  "bobby.upgrade.fallback_world": "[Bobby] 대체 월드에는 이전 마인크래프트 버전의 데이터가 포함되어 있습니다. 메인 메뉴에서 \"싱글플레이\" -> \"편집\" -> \"월드 최적화\" 옵션을 사용하여 업그레이드하세요.",
   "bobby.upgrade.not_enabled": "Bobby가 이 월드에서 활성화되어 있지 않습니다.",
   "bobby.upgrade.begin": "[Bobby] 월드 데이터를 현재 Minecraft 버전으로 업그레이드합니다. 몇 분 정도 걸릴 수 있습니다.",
   "bobby.upgrade.progress": "[Bobby] %d개 중 (추정) %d개 청크(월드 %d 중 %d개)를 업그레이드했습니다.",
@@ -19,7 +19,7 @@
   "option.bobby.unload_delay": "청크 언로드 지연(초)",
   "tooltip.option.bobby.unload_delay": "시야 거리 밖에 있는 청크의 언로드를 지연합니다.\n잠시 지역을 벗어날 때(컷씬 등).\n차원이 바뀌면 바로 언로드됩니다.",
   "option.bobby.delete_unused_regions_after_days": "사용하지 않는 구역 정리(일수)",
-  "tooltip.option.bobby.delete_unused_regions_after_days": "X일 동안 로드되지 않으면 구역을 캐시에서 삭제합니다.\n\n서버에서 연결을 끊을 때마다 세계의 캐시가 정리됩니다.\n게임이 시작되고 X일 동안 플레이를 하지 않으면 모든 세계가 정리됩니다.\n\n-1로 설정해 비활성화하세요.\n연결이 끊길 때마다 모든 청크를 정리하려면 0으로 설정합니다.",
+  "tooltip.option.bobby.delete_unused_regions_after_days": "X일 동안 로드되지 않으면 구역을 캐시에서 삭제합니다.\n\n서버에서 연결을 끊을 때마다 세계의 캐시가 정리됩니다.\n게임이 시작되고 X일 동안 플레이를 하지 않으면 모든 세계가 정리됩니다.\n\n비활성화하려면 -1로 설정해주세요.\n서버와의 연결이 끊길 때마다 모든 구역를 정리하려면 0으로 설정해주세요.",
   "option.bobby.max_render_distance": "최대 렌더링 거리",
   "tooltip.option.bobby.max_render_distance": "렌더링 거리에 대해 설정 가능한 최대값을 변경합니다.\n\nSodium 모드가 필요합니다.",
   "option.bobby.view_distance_overwrite": "싱글 플레이어 서버 시야 거리",
