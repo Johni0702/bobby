@@ -1,12 +1,18 @@
 {
-  "bobby.upgrade.required": "[Bobby] 这个世界包含来自旧版Minecraft的数据，运行/bobby upgrade进行升级",
+  "modmenu.descriptionTranslation.bobby": "允许渲染距离大于服务器的视距设置。",
+  "bobby.upgrade.required": "[Bobby] 这个世界包含来自旧版 Minecraft 的数据，运行 /bobby upgrade 进行升级",
+  "bobby.upgrade.fallback_world": "[Bobby] 你的世界包含来自 Minecraft 旧版本的数据。请通过 \"单人游戏\" 菜单中的 \"编辑\" -> \"优化世界\" 选项进行升级。",
   "bobby.upgrade.not_enabled": "Bobby 此世界未启用",
-  "bobby.upgrade.begin": "[Bobby] 将世界数据升级到当前的Minecraft版本，这可能需要几分钟",
+  "bobby.upgrade.begin": "[Bobby] 将世界数据升级到当前的 Minecraft 版本，这可能需要几分钟",
   "bobby.upgrade.progress": "[Bobby] 已升级 %d 中的 %d 个区块 (world %d of %d)",
   "bobby.upgrade.done": "[Bobby] 世界数据升级完成",
 
+  "bobby.dynamic_multi_world.not_enabled": "[Bobby] 动态世界管理未启用。",
+
   "title.bobby.config": "Bobby 配置",
   "option.bobby.enabled": "启用",
+  "option.bobby.dynamic_multi_world": "动态世界管理",
+  "tooltip.option.bobby.dynamic_multi_world": "启用对具有多个同名世界的服务器的支持(例如：使用群组端的服务器等)。\n\n启用后，每次切换世界时都会启动一个新的本地缓存。如果两个缓存中有足够多内容相似的区块，它们将自动合并。\n这意味着，如果世界中的标识信息较少（例如平坦世界），Bobby 加载缓存区块之前，你可能需要先走动一下。\n\n如果现有的缓存包含多个世界，你可能需要删除它，以防止 Bobby 将其合并。\n启用后，如果存在现有缓存，需要运行 `/bobby upgrade` 。",
   "option.bobby.no_block_entities": "禁用假区块中的实体",
   "tooltip.option.bobby.no_block_entities": "不加载假区块中的实体（如箱子）。\n默认情况下启用，因为块实体的渲染距离通常小于服务器视距",
   "option.bobby.taint_fake_chunks": "降低假区块的光照度",
