@@ -1,3 +1,5 @@
+### 5.2.7-SNAPSHOT
+
 ### 5.2.6
 - Update to Minecraft 1.21.4
 - Fix "Network Protocol Error" when server sends block updates for chunks it has already unloaded (#341)
