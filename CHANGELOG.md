@@ -1,4 +1,5 @@
 ### 5.2.7-SNAPSHOT
+- Update to Minecraft 1.21.5
 
 ### 5.2.6
 - Update to Minecraft 1.21.4

@@ -273,7 +273,7 @@ public class Worlds implements AutoCloseable {
                 for (CompletableFuture<Optional<NbtCompound>> future : fUnknownAgeResults) {
                     NbtCompound result = future.join().orElse(null);
                     if (result != null) {
-                        long age = result.getLong("age");
+                        long age = result.getLong("age", 0);
                         if (age > bestAge) {
                             bestAge = age;
                             bestResult = result;
@@ -1029,19 +1029,19 @@ public class Worlds implements AutoCloseable {
 
             nextWorldId = outdatedWorlds.stream().mapToInt(it -> it.id).max().orElse(0) + 1;
         } else {
-            for (NbtElement worldNbtElement : root.getList("worlds", NbtElement.COMPOUND_TYPE)) {
+            for (NbtElement worldNbtElement : root.getListOrEmpty("worlds")) {
                 NbtCompound worldNbt = (NbtCompound) worldNbtElement;
-                World world = new World(worldNbt.getInt("id"), worldNbt.getInt("version"));
-                world.knownRegions.addAll(LongArrayList.wrap(worldNbt.getLongArray("regions")));
-                if (worldNbt.contains("merging_into")) {
-                    world.mergingIntoWorld = worldNbt.getInt("merging_into");
-                }
-                for (NbtElement matchNbtElement : worldNbt.getList("matches", NbtElement.COMPOUND_TYPE)) {
+                int id = worldNbt.getInt("id").orElseThrow();
+                int version = worldNbt.getInt("version").orElseThrow();
+                World world = new World(id, version);
+                world.knownRegions.addAll(LongArrayList.wrap(worldNbt.getLongArray("regions").orElseThrow()));
+                worldNbt.getInt("merging_into").ifPresent(it -> world.mergingIntoWorld = it);
+                for (NbtElement matchNbtElement : worldNbt.getList("matches").orElseThrow()) {
                     NbtCompound matchNbt = (NbtCompound) matchNbtElement;
-                    int otherWorldId = matchNbt.getInt("world");
+                    int otherWorldId = matchNbt.getInt("world").orElseThrow();
                     Match match = new Match(
-                            new LongOpenHashSet(worldNbt.getLongArray("matching")),
-                            new LongOpenHashSet(worldNbt.getLongArray("mismatching"))
+                            new LongOpenHashSet(worldNbt.getLongArray("matching").orElseThrow()),
+                            new LongOpenHashSet(worldNbt.getLongArray("mismatching").orElseThrow())
                     );
 
                     World otherWorld = worlds.get(otherWorldId);
@@ -1053,7 +1053,7 @@ public class Worlds implements AutoCloseable {
                         world.matchingWorlds.put(otherWorldId, match);
                     }
                 }
-                world.nonMatchingWorlds.addAll(IntArrayList.wrap(worldNbt.getIntArray("non_matching")));
+                world.nonMatchingWorlds.addAll(IntArrayList.wrap(worldNbt.getIntArray("non_matching").orElseThrow()));
 
                 if (world.version == CURRENT_SAVE_VERSION) {
                     worlds.put(world.id, world);
@@ -1062,7 +1062,7 @@ public class Worlds implements AutoCloseable {
                 }
             }
 
-            nextWorldId = root.getInt("next_world");
+            nextWorldId = root.getInt("next_world", 0);
         }
 
         World currentWorld;
@@ -1413,9 +1413,9 @@ public class Worlds implements AutoCloseable {
                 root = NbtIo.readCompressed(in, NbtSizeTracker.ofUnlimitedBytes());
             }
 
-            long[] chunkCoords = root.getLongArray("chunk_coords");
-            long[] chunkAges = root.getLongArray("chunk_ages");
-            long[] chunkFingerprints = root.getLongArray("chunk_fingerprints");
+            long[] chunkCoords = root.getLongArray("chunk_coords").orElseGet(() -> new long[0]);
+            long[] chunkAges = root.getLongArray("chunk_ages").orElseGet(() -> new long[0]);
+            long[] chunkFingerprints = root.getLongArray("chunk_fingerprints").orElseGet(() -> new long[0]);
 
             Region region = new Region();
             region.chunks.putAll(new Long2LongArrayMap(chunkCoords, chunkAges));
@@ -1567,7 +1567,7 @@ public class Worlds implements AutoCloseable {
 
             // If source age is unknown, check the nbt for it
             if (sourceAge == 1) {
-                age = nbt.getLong("age");
+                age = nbt.getLong("age", 0);
                 if (age < targetAge) {
                     done = true;
                     return;

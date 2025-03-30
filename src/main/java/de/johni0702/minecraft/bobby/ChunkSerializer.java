@@ -10,7 +10,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.nbt.NbtElement;
 import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtLongArray;
 import net.minecraft.nbt.NbtOps;
@@ -44,6 +43,7 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public class ChunkSerializer {
@@ -143,7 +143,7 @@ public class ChunkSerializer {
         NbtCompound hightmapsTag = new NbtCompound();
         for (Map.Entry<Heightmap.Type, Heightmap> entry : chunk.getHeightmaps()) {
             if (chunk.getStatus().getHeightmapTypes().contains(entry.getKey())) {
-                hightmapsTag.put(entry.getKey().getName(), new NbtLongArray(entry.getValue().asLongArray()));
+                hightmapsTag.put(entry.getKey().getId(), new NbtLongArray(entry.getValue().asLongArray()));
             }
         }
         level.put("Heightmaps", hightmapsTag);
@@ -158,7 +158,7 @@ public class ChunkSerializer {
     public static Pair<WorldChunk, Supplier<WorldChunk>> deserialize(ChunkPos pos, NbtCompound level, World world) {
         BobbyConfig config = Bobby.getInstance().getConfig();
 
-        ChunkPos chunkPos = new ChunkPos(level.getInt("xPos"), level.getInt("zPos"));
+        ChunkPos chunkPos = new ChunkPos(level.getInt("xPos", 0), level.getInt("zPos", 0));
         if (!Objects.equals(pos, chunkPos)) {
             LOGGER.error("Chunk file at {} is in the wrong location; relocating. (Expected {}, got {})", pos, pos, chunkPos);
         }
@@ -171,7 +171,7 @@ public class ChunkSerializer {
                 biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow()
         );
 
-        NbtList sectionsTag = level.getList("sections", NbtElement.COMPOUND_TYPE);
+        NbtList sectionsTag = level.getListOrEmpty("sections");
         ChunkSection[] chunkSections = new ChunkSection[world.countVerticalSections()];
         ChunkNibbleArray[] blockLight = new ChunkNibbleArray[chunkSections.length + 2];
         ChunkNibbleArray[] skyLight = new ChunkNibbleArray[chunkSections.length + 2];
@@ -179,8 +179,10 @@ public class ChunkSerializer {
         Arrays.fill(blockLight, COMPLETELY_DARK);
 
         for (int i = 0; i < sectionsTag.size(); i++) {
-            NbtCompound sectionTag = sectionsTag.getCompound(i);
-            int y = sectionTag.getByte("Y");
+            Optional<NbtCompound> maybeSectionTag = sectionsTag.getCompound(i);
+            if (maybeSectionTag.isEmpty()) continue;
+            NbtCompound sectionTag = maybeSectionTag.get();
+            int y = sectionTag.getByte("Y", (byte) 0);
             int yIndex = world.sectionCoordToIndex(y);
 
             if (yIndex < -1 || yIndex > chunkSections.length) {
@@ -198,23 +200,19 @@ public class ChunkSerializer {
             }
 
             if (yIndex >= 0 && yIndex < chunkSections.length) {
-                PalettedContainer<BlockState> blocks;
-                if (sectionTag.contains("block_states", NbtElement.COMPOUND_TYPE)) {
-                    blocks = BLOCK_CODEC.parse(NbtOps.INSTANCE, sectionTag.getCompound("block_states"))
-                            .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
-                            .getOrThrow();
-                } else {
-                    blocks = new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE);
-                }
+                PalettedContainer<BlockState> blocks = sectionTag
+                        .getCompound("block_states")
+                        .map(tag -> BLOCK_CODEC.parse(NbtOps.INSTANCE, tag)
+                                .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
+                                .getOrThrow())
+                        .orElseGet(() -> new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE));
 
-                PalettedContainer<RegistryEntry<Biome>> biomes;
-                if (sectionTag.contains("biomes", NbtElement.COMPOUND_TYPE)) {
-                    biomes = biomeCodec.parse(NbtOps.INSTANCE, sectionTag.getCompound("biomes"))
-                            .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
-                            .getOrThrow();
-                } else {
-                    biomes = new PalettedContainer<>(biomeRegistry.getIndexedEntries(), biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow(), PalettedContainer.PaletteProvider.BIOME);
-                }
+                PalettedContainer<RegistryEntry<Biome>> biomes = sectionTag
+                        .getCompound("biomes")
+                        .map(tag -> biomeCodec.parse(NbtOps.INSTANCE, tag)
+                                .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
+                                .getOrThrow())
+                        .orElseGet(() -> new PalettedContainer<>(biomeRegistry.getIndexedEntries(), biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow(), PalettedContainer.PaletteProvider.BIOME));
 
                 ChunkSection chunkSection = new ChunkSection(blocks, biomes);
                 chunkSection.calculateCounts();
@@ -223,13 +221,13 @@ public class ChunkSerializer {
                 }
             }
 
-            if (sectionTag.contains("BlockLight", NbtElement.BYTE_ARRAY_TYPE)) {
-                blockLight[yIndex + 1] = new ChunkNibbleArray(sectionTag.getByteArray("BlockLight"));
-            }
+            blockLight[yIndex + 1] = sectionTag.getByteArray("BlockLight")
+                    .map(ChunkNibbleArray::new)
+                    .orElse(null);
 
-            if (sectionTag.contains("SkyLight", NbtElement.BYTE_ARRAY_TYPE)) {
-                skyLight[yIndex + 1] = new ChunkNibbleArray(sectionTag.getByteArray("SkyLight"));
-            }
+            skyLight[yIndex + 1] = sectionTag.getByteArray("SkyLight")
+                    .map(ChunkNibbleArray::new)
+                    .orElse(null);
         }
 
         // Not all light sections are stored. For block light we simply fall back to a completely dark section.
@@ -260,13 +258,14 @@ public class ChunkSerializer {
 
         FakeChunk chunk = new FakeChunk(world, pos, chunkSections);
 
-        NbtCompound hightmapsTag = level.getCompound("Heightmaps");
+        NbtCompound hightmapsTag = level.getCompoundOrEmpty("Heightmaps");
         EnumSet<Heightmap.Type> missingHightmapTypes = EnumSet.noneOf(Heightmap.Type.class);
 
         for (Heightmap.Type type : chunk.getStatus().getHeightmapTypes()) {
-            String key = type.getName();
-            if (hightmapsTag.contains(key, NbtElement.LONG_ARRAY_TYPE)) {
-                chunk.setHeightmap(type, hightmapsTag.getLongArray(key));
+            String key = type.getId();
+            Optional<long[]> maybeTag = hightmapsTag.getLongArray(key);
+            if (maybeTag.isPresent()) {
+                chunk.setHeightmap(type, maybeTag.get());
             } else {
                 missingHightmapTypes.add(type);
             }
@@ -275,10 +274,10 @@ public class ChunkSerializer {
         Heightmap.populateHeightmaps(chunk, missingHightmapTypes);
 
         if (!config.isNoBlockEntities()) {
-            NbtList blockEntitiesTag = level.getList("block_entities", NbtElement.COMPOUND_TYPE);
-            for (int i = 0; i < blockEntitiesTag.size(); i++) {
-                chunk.addPendingBlockEntityNbt(blockEntitiesTag.getCompound(i));
-            }
+            level.getList("block_entities")
+                    .stream()
+                    .flatMap(NbtList::streamCompounds)
+                    .forEach(chunk::addPendingBlockEntityNbt);
         }
 
         return Pair.of(chunk, loadChunk(chunk, blockLight, skyLight, config));

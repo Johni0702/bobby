@@ -128,7 +128,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         if (nbt != null && lastAccess != null) {
             lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
         }
-        if (nbt != null && nbt.getInt("DataVersion") != SharedConstants.getGameVersion().getSaveVersion().getId()) {
+        if (nbt != null && nbt.getInt("DataVersion", 0) != SharedConstants.getGameVersion().getSaveVersion().getId()) {
             if (sentUpgradeNotification.compareAndSet(false, true)) {
                 MinecraftClient client = MinecraftClient.getInstance();
                 client.execute(() -> {

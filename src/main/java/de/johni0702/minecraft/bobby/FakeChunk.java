@@ -71,7 +71,7 @@ public class FakeChunk extends WorldChunk {
     }
 
     @Override
-    public @Nullable BlockState setBlockState(BlockPos pos, BlockState state, boolean moved) {
+    public @Nullable BlockState setBlockState(BlockPos pos, BlockState state, int flags) {
         // This should never be called for fake chunks, but some server incorrectly send block updates for chunks
         // they just unloaded, which can then result in a race condition between this update and the background thread
         // which serializes the chunk.

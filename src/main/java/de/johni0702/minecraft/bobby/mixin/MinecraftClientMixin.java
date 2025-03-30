@@ -39,7 +39,7 @@ public abstract class MinecraftClientMixin {
         profiler.push("bobbyUpdate");
 
         int maxFps = options.getMaxFps().getValue();
-        long frameTime = 1_000_000_000 / (maxFps == GameOptions.MAX_FRAMERATE ? 120 : maxFps);
+        long frameTime = 1_000_000_000 / (maxFps == GameOptions.MAX_FPS_LIMIT ? 120 : maxFps);
         // Arbitrarily choosing 1/4 of frame time as our max budget, that way we're hopefully not noticeable.
         long frameBudget = frameTime / 4;
         long timeLimit = Util.getMeasuringTimeNano() + frameBudget;
