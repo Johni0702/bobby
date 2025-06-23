@@ -1,4 +1,5 @@
 ### 5.2.8-SNAPSHOT
+- Update to Minecraft 1.21.6
 - Update Korean, Japanese, Chinese translations
 
 ### 5.2.7

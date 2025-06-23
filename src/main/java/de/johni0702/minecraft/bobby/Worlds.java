@@ -79,7 +79,7 @@ public class Worlds implements AutoCloseable {
     private static final int CONCURRENT_COPY_JOBS = 10;
     private static final int MATCH_THRESHOLD = 10;
     private static final int MISMATCH_THRESHOLD = 100;
-    private static final int CURRENT_SAVE_VERSION = SharedConstants.getGameVersion().getSaveVersion().getId();
+    private static final int CURRENT_SAVE_VERSION = SharedConstants.getGameVersion().dataVersion().id();
 
     // Executor for saving. Single-threaded so we do not have to worry about races between multiple saves.
     private static final ExecutorService saveExecutor = Executors.newSingleThreadExecutor(new DefaultThreadFactory("bobby-meta-saving", true));

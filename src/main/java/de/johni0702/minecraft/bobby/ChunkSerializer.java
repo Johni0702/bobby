@@ -79,7 +79,7 @@ public class ChunkSerializer {
 
         ChunkPos chunkPos = chunk.getPos();
         NbtCompound level = new NbtCompound();
-        level.putInt("DataVersion", SharedConstants.getGameVersion().getSaveVersion().getId());
+        level.putInt("DataVersion", SharedConstants.getGameVersion().dataVersion().id());
         level.putInt("xPos", chunkPos.x);
         level.putInt("yPos", chunk.getBottomSectionCoord());
         level.putInt("zPos", chunkPos.z);

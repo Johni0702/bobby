@@ -1,22 +1,30 @@
 package de.johni0702.minecraft.bobby.mixin;
 
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import de.johni0702.minecraft.bobby.FakeChunkManager;
 import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
+import de.johni0702.minecraft.bobby.ext.GameRendererExt;
 import de.johni0702.minecraft.bobby.util.FlawlessFrames;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.render.Camera;
 import net.minecraft.client.render.GameRenderer;
+import net.minecraft.client.render.RenderTickCounter;
+import net.minecraft.client.render.fog.FogRenderer;
 import net.minecraft.client.world.ClientWorld;
 import net.minecraft.util.profiler.Profiler;
 import net.minecraft.util.profiler.Profilers;
+import org.joml.Vector4f;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(GameRenderer.class)
-public abstract class GameRendererMixin {
+public abstract class GameRendererMixin implements GameRendererExt {
 
     @Shadow
     @Final
@@ -44,5 +52,31 @@ public abstract class GameRendererMixin {
         bobbyChunkManager.update(true, () -> true);
 
         profiler.pop();
+    }
+
+    @Unique
+    private final FogRenderer skyFogRenderer = new FogRenderer();
+
+    @Override
+    public FogRenderer bobby_getSkyFogRenderer() {
+        return skyFogRenderer;
+    }
+
+    @WrapOperation(method = "renderWorld", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/fog/FogRenderer;applyFog(Lnet/minecraft/client/render/Camera;IZLnet/minecraft/client/render/RenderTickCounter;FLnet/minecraft/client/world/ClientWorld;)Lorg/joml/Vector4f;"))
+    private Vector4f updateSkyFogRenderer(FogRenderer instance, Camera camera, int viewDistance, boolean thick, RenderTickCounter tickCounter, float skyDarkness, ClientWorld world, Operation<Vector4f> operation) {
+        if (viewDistance >= 32) {
+            skyFogRenderer.applyFog(camera, 32, thick, tickCounter, skyDarkness, world);
+        }
+        return operation.call(instance, camera, viewDistance, thick, tickCounter, skyDarkness, world);
+    }
+
+    @Inject(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/fog/FogRenderer;rotate()V"))
+    private void rotateSkyFogRenderer(CallbackInfo ci) {
+        skyFogRenderer.rotate();
+    }
+
+    @Inject(method = "close", at = @At("RETURN"))
+    private void closeSkyFogRenderer(CallbackInfo ci) {
+        skyFogRenderer.close();
     }
 }
