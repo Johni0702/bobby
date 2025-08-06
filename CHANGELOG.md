@@ -1,5 +1,6 @@
 ### 5.2.9-SNAPSHOT
 - Fix "Network Protocol Error" when "Dynamic World Management" is enabled and some worlds aren't fully matched (thanks to Alex33856!)
+- Fix some worlds not being deleted with "Dynamic World Management" (thanks to Alex33856!)
 
 ### 5.2.8
 - Update to Minecraft 1.21.6

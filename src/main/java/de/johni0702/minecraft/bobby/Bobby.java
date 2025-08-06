@@ -117,13 +117,13 @@ public class Bobby implements ClientModInitializer {
                     .filter(it -> basePath.relativize(it).getNameCount() == 4)
                     .flatMap(directory -> {
                         try {
+                            List<Path> toDelete = new ArrayList<>();
                             if (Files.exists(Worlds.metaFile(directory))) {
                                 List<Path> worlds;
                                 try (Stream<Path> fStream = Files.list(directory)) {
                                     worlds = fStream.filter(Files::isDirectory).collect(Collectors.toList());
                                 }
                                 boolean stillHasWorlds = false;
-                                List<Path> toDelete = new ArrayList<>();
                                 for (Path world : worlds) {
                                     if (LastAccessFile.isEverythingOlderThan(world, deleteUnusedRegionsAfterDays)) {
                                         try (Stream<Path> fStream = Files.list(world)) {
@@ -138,14 +138,19 @@ public class Bobby implements ClientModInitializer {
                                         fStream.forEach(toDelete::add);
                                     }
                                 }
-                                return toDelete.stream();
                             } else {
+                                // Multi-world: Remove world directory files if the worlds.meta file is missing
+                                try (Stream<Path> fStream = Files.walk(directory, 2)) {
+                                    fStream.filter(it -> it.relativize(directory).getNameCount() == 2).forEach(toDelete::add);
+                                }
+
                                 if (LastAccessFile.isEverythingOlderThan(directory, deleteUnusedRegionsAfterDays)) {
                                     try (Stream<Path> fStream = Files.list(directory)) {
-                                        return fStream.toList().stream();
+                                        fStream.filter(it -> !Files.isDirectory(it)).forEach(toDelete::add);
                                     }
                                 }
                             }
+                            return toDelete.stream();
                         } catch (IOException e) {
                             LOGGER.error("Failed to read last used file in " + directory + ":", e);
                         }
