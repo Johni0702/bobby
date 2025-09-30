@@ -1,4 +1,4 @@
-### 5.2.10-SNAPSHOT
+### 5.2.10
 - Update to Minecraft 1.21.9
 
 ### 5.2.9
