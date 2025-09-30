@@ -1,4 +1,4 @@
-### 5.2.9-SNAPSHOT
+### 5.2.9
 - Fix "Network Protocol Error" when "Dynamic World Management" is enabled and some worlds aren't fully matched (thanks to Alex33856!)
 - Fix some worlds not being deleted with "Dynamic World Management" (thanks to Alex33856!)
 
