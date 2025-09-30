@@ -1,4 +1,5 @@
 ### 5.2.10-SNAPSHOT
+- Update to Minecraft 1.21.9
 
 ### 5.2.9
 - Fix "Network Protocol Error" when "Dynamic World Management" is enabled and some worlds aren't fully matched (thanks to Alex33856!)

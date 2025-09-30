@@ -18,7 +18,7 @@ public abstract class WorldRendererMixin {
 
     @Shadow @Final private MinecraftClient client;
 
-    @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;renderSky(Lnet/minecraft/client/render/FrameGraphBuilder;Lnet/minecraft/client/render/Camera;FLcom/mojang/blaze3d/buffers/GpuBufferSlice;)V"))
+    @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/render/WorldRenderer;renderSky(Lnet/minecraft/client/render/FrameGraphBuilder;Lnet/minecraft/client/render/Camera;Lcom/mojang/blaze3d/buffers/GpuBufferSlice;)V"))
     private GpuBufferSlice clampMaxValue(GpuBufferSlice fogBuffer) {
         if (getViewDistance() >= 32) {
             fogBuffer = ((GameRendererExt) client.gameRenderer).bobby_getSkyFogRenderer().getFogBuffer(FogRenderer.FogType.WORLD);

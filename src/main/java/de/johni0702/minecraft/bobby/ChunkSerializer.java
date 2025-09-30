@@ -29,6 +29,7 @@ import net.minecraft.world.biome.BiomeKeys;
 import net.minecraft.world.chunk.ChunkManager;
 import net.minecraft.world.chunk.ChunkNibbleArray;
 import net.minecraft.world.chunk.ChunkSection;
+import net.minecraft.world.chunk.PaletteProvider;
 import net.minecraft.world.chunk.PalettedContainer;
 import net.minecraft.world.chunk.ReadableContainer;
 import net.minecraft.world.chunk.WorldChunk;
@@ -61,9 +62,8 @@ public class ChunkSerializer {
         }
     }
     private static final Codec<PalettedContainer<BlockState>> BLOCK_CODEC = PalettedContainer.createPalettedContainerCodec(
-            Block.STATE_IDS,
             BlockState.CODEC,
-            PalettedContainer.PaletteProvider.BLOCK_STATE,
+            PaletteProvider.forBlockStates(Block.STATE_IDS),
             Blocks.AIR.getDefaultState()
     );
 
@@ -71,9 +71,8 @@ public class ChunkSerializer {
         DynamicRegistryManager registryManager = chunk.getWorld().getRegistryManager();
         Registry<Biome> biomeRegistry = registryManager.getOrThrow(RegistryKeys.BIOME);
         Codec<ReadableContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createReadableContainerCodec(
-                biomeRegistry.getIndexedEntries(),
                 biomeRegistry.getEntryCodec(),
-                PalettedContainer.PaletteProvider.BIOME,
+                PaletteProvider.forBiomes(biomeRegistry.getIndexedEntries()),
                 biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow()
         );
 
@@ -165,9 +164,8 @@ public class ChunkSerializer {
 
         Registry<Biome> biomeRegistry = world.getRegistryManager().getOrThrow(RegistryKeys.BIOME);
         Codec<PalettedContainer<RegistryEntry<Biome>>> biomeCodec = PalettedContainer.createPalettedContainerCodec(
-                biomeRegistry.getIndexedEntries(),
                 biomeRegistry.getEntryCodec(),
-                PalettedContainer.PaletteProvider.BIOME,
+                PaletteProvider.forBiomes(biomeRegistry.getIndexedEntries()),
                 biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow()
         );
 
@@ -205,14 +203,14 @@ public class ChunkSerializer {
                         .map(tag -> BLOCK_CODEC.parse(NbtOps.INSTANCE, tag)
                                 .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
                                 .getOrThrow())
-                        .orElseGet(() -> new PalettedContainer<>(Block.STATE_IDS, Blocks.AIR.getDefaultState(), PalettedContainer.PaletteProvider.BLOCK_STATE));
+                        .orElseGet(() -> new PalettedContainer<>(Blocks.AIR.getDefaultState(), PaletteProvider.forBlockStates(Block.STATE_IDS)));
 
                 PalettedContainer<RegistryEntry<Biome>> biomes = sectionTag
                         .getCompound("biomes")
                         .map(tag -> biomeCodec.parse(NbtOps.INSTANCE, tag)
                                 .promotePartial((errorMessage) -> logRecoverableError(chunkPos, y, errorMessage))
                                 .getOrThrow())
-                        .orElseGet(() -> new PalettedContainer<>(biomeRegistry.getIndexedEntries(), biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow(), PalettedContainer.PaletteProvider.BIOME));
+                        .orElseGet(() -> new PalettedContainer<>(biomeRegistry.getEntry(BiomeKeys.PLAINS.getValue()).orElseThrow(), PaletteProvider.forBiomes(biomeRegistry.getIndexedEntries())));
 
                 ChunkSection chunkSection = new ChunkSection(blocks, biomes);
                 chunkSection.calculateCounts();
