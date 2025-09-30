@@ -1040,8 +1040,8 @@ public class Worlds implements AutoCloseable {
                     NbtCompound matchNbt = (NbtCompound) matchNbtElement;
                     int otherWorldId = matchNbt.getInt("world").orElseThrow();
                     Match match = new Match(
-                            new LongOpenHashSet(worldNbt.getLongArray("matching").orElseThrow()),
-                            new LongOpenHashSet(worldNbt.getLongArray("mismatching").orElseThrow())
+                            new LongOpenHashSet(matchNbt.getLongArray("matching").orElseThrow()),
+                            new LongOpenHashSet(matchNbt.getLongArray("mismatching").orElseThrow())
                     );
 
                     World otherWorld = worlds.get(otherWorldId);
