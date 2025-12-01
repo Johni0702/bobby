@@ -1,3 +1,6 @@
+### 5.2.11
+- Update to Minecraft 1.21.10
+
 ### 5.2.10
 - Update to Minecraft 1.21.9
 
