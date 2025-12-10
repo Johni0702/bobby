@@ -321,7 +321,7 @@ public class Worlds implements AutoCloseable {
         outdatedWorlds.remove(world);
     }
 
-    public void saveAll() {
+    public CompletableFuture<?> saveAll() {
         List<World> worlds;
         lock.readLock().lock();
         try {
@@ -329,9 +329,9 @@ public class Worlds implements AutoCloseable {
         } finally {
             lock.readLock().unlock();
         }
-        for (World world : worlds) {
-            world.storage.completeAll();
-        }
+        return CompletableFuture.allOf(worlds.stream()
+                .map(it -> it.storage.completeAll(true))
+                .toArray(CompletableFuture[]::new));
     }
 
     @Override
@@ -340,7 +340,7 @@ public class Worlds implements AutoCloseable {
 
         lock.writeLock().lock();
         try {
-            saveAll();
+            saveAll().join();
 
             if (dirty) {
                 scheduleSave();
@@ -528,7 +528,7 @@ public class Worlds implements AutoCloseable {
                 case BlockedByPreviouslyQueuedWrites -> {
                     state.stage = MergeStage.WaitForPreviouslyQueuedWrites;
                     Util.getIoWorkerExecutor().execute(() -> {
-                        sourceWorld.storage.completeAll();
+                        sourceWorld.storage.completeAll(true).join();
                         state.stage = MergeStage.Idle;
                     });
                 }
@@ -634,7 +634,7 @@ public class Worlds implements AutoCloseable {
                     if (state.activeJobs.isEmpty()) {
                         state.stage = MergeStage.Syncing;
                         Util.getIoWorkerExecutor().execute(() -> {
-                            targetWorld.storage.completeAll();
+                            targetWorld.storage.completeAll(true).join();
                             state.stage = MergeStage.WriteTargetMeta;
                         });
                     } else {

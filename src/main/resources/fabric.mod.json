@@ -24,6 +24,9 @@
     ],
     "modmenu": [
       "de.johni0702.minecraft.bobby.BobbyModMenuApiImpl"
+    ],
+    "sodium:config_api_user": [
+      "de.johni0702.minecraft.bobby.SodiumConfigEntrypoint"
     ]
   },
   "mixins": [

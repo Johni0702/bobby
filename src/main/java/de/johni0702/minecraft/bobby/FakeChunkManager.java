@@ -171,8 +171,11 @@ public class FakeChunkManager {
     private void update(boolean blocking, BooleanSupplier shouldKeepTicking, int newViewDistance) {
         // Once a minute, force chunks to disk
         if (++ticksSinceLastSave > 20 * 60) {
-            // completeAll is blocking, so we run it on the io pool
-            Util.getIoWorkerExecutor().execute(worlds != null ? worlds::saveAll : storage::completeAll);
+            if (worlds != null) {
+                worlds.saveAll();
+            } else {
+                storage.completeAll(true);
+            }
 
             ticksSinceLastSave = 0;
         }

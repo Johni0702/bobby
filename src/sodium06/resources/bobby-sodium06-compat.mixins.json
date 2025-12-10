@@ -6,8 +6,7 @@
   "plugin": "de.johni0702.minecraft.bobby.MixinConfigPlugin",
   "client": [
     "sodium06.SodiumChunkManagerMixin",
-    "sodium06.SodiumClientPlayNetworkHandlerMixin",
-    "sodium06.SodiumGameOptionPagesMixin"
+    "sodium06.SodiumClientPlayNetworkHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

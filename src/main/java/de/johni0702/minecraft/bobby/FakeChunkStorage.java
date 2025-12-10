@@ -5,9 +5,11 @@ import de.johni0702.minecraft.bobby.util.RegionPos;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import net.minecraft.SharedConstants;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.datafixer.DataFixTypes;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.RegistryKey;
+import net.minecraft.server.world.ServerChunkLoadingManager;
 import net.minecraft.text.Text;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
@@ -76,7 +78,8 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                 new StorageKey("dummy", World.OVERWORLD, "bobby"),
                 directory,
                 MinecraftClient.getInstance().getDataFixer(),
-                false
+                false,
+                DataFixTypes.CHUNK
         );
 
         this.directory = directory;
@@ -117,7 +120,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
         if (lastAccess != null) {
             lastAccess.touchRegion(pos.getRegionX(), pos.getRegionZ());
         }
-        setNbt(pos, () -> chunk);
+        setNbt(pos, chunk);
     }
 
     public CompletableFuture<Optional<NbtCompound>> loadTag(ChunkPos pos) {
@@ -156,6 +159,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
     public void upgrade(RegistryKey<World> worldKey, BiConsumer<Integer, Integer> progress) throws IOException {
         Optional<RegistryKey<MapCodec<? extends ChunkGenerator>>> generatorKey =
                 Optional.of(Registries.CHUNK_GENERATOR.getKey(FlatChunkGenerator.CODEC).orElseThrow());
+        NbtCompound contextNbt = ServerChunkLoadingManager.getContextNbt(worldKey, generatorKey);
 
         List<ChunkPos> chunks = getRegions(directory).stream().flatMap(RegionPos::getContainedChunks).toList();
 
@@ -189,7 +193,7 @@ public class FakeChunkStorage extends VersionedChunkStorage {
                     // from chunks that don't have this set, so we need to set it before we upgrade the chunk.
                     nbt.putBoolean("isLightOn", true);
 
-                    nbt = updateChunkNbt(worldKey, null, nbt, generatorKey);
+                    nbt = updateChunkNbt(nbt, -1, contextNbt);
 
                     io.setResult(chunkPos, nbt).join();
 
