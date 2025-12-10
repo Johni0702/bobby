@@ -1,4 +1,4 @@
-### 5.2.11-SNAPSHOT
+### 5.2.11
 - Update to Minecraft 1.21.11
 
 ### 5.2.10
