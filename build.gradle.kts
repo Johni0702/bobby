@@ -59,10 +59,7 @@ dependencies {
 	modCompileOnly("maven.modrinth:starlight:$starlightVersion")
 	modCompileOnly("ca.stellardrift:confabricate:$confabricateVersion")
 	modImplementation("me.shedaniel.cloth:cloth-config-fabric:$clothConfigVersion")
-	modCompileOnly("com.terraformersmc:modmenu:$modMenuVersion") /*
-	  FIXME re-enable once released
 	modImplementation("com.terraformersmc:modmenu:$modMenuVersion")
-	*/
 }
 
 tasks.processResources {
