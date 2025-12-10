@@ -1,5 +1,5 @@
 plugins {
-	id("fabric-loom") version "1.11.8"
+	id("fabric-loom") version "1.14.5"
 	id("maven-publish")
 	id("com.github.breadmoirai.github-release") version "2.2.12"
 	id("com.matthewprenger.cursegradle") version "1.4.0"
@@ -19,10 +19,8 @@ version = "$modVersion+mc$minecraftVersion"
 
 sourceSets {
 	val main = main.get()
-	loom.mixin.add(main, "bobby.refmap.json")
 	create("sodium06") {
 		loom.createRemapConfigurations(this)
-		loom.mixin.add(this, "bobby-sodium06-compat.refmap.json")
 		compileClasspath += main.compileClasspath
 		compileClasspath += main.output
 		main.runtimeClasspath += output

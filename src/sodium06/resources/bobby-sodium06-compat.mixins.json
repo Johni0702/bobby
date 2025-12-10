@@ -2,7 +2,6 @@
   "required": true,
   "minVersion": "0.8",
   "package": "de.johni0702.minecraft.bobby.mixin",
-  "refmap": "bobby-sodium06-compat.refmap.json",
   "compatibilityLevel": "JAVA_21",
   "plugin": "de.johni0702.minecraft.bobby.MixinConfigPlugin",
   "client": [
