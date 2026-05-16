@@ -1,4 +1,4 @@
-### 5.2.13-SNAPSHOT
+### 5.2.13
 - Fix chunks sometimes not rendering after teleport with Sodium
 
 ### 5.2.12
