@@ -6,6 +6,7 @@
   "plugin": "de.johni0702.minecraft.bobby.MixinConfigPlugin",
   "client": [
     "sodium06.SodiumClientChunkCacheMixin",
+    "sodium06.SodiumClientLevelMixin",
     "sodium06.SodiumClientPacketListenerMixin"
   ],
   "injectors": {
