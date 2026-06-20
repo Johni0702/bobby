@@ -135,7 +135,7 @@ public class FakeChunkStorage extends SimpleRegionStorage {
                 Minecraft client = Minecraft.getInstance();
                 client.execute(() -> {
                     Component text = Component.translatable(writeable ? "bobby.upgrade.required" : "bobby.upgrade.fallback_world");
-                    client.gui.getChat().addClientSystemMessage(text);
+                    client.gui.hud.getChat().addClientSystemMessage(text);
                 });
             }
             return null;

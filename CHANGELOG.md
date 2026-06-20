@@ -1,4 +1,5 @@
 ### 5.2.14-SNAPSHOT
+- Update to Minecraft 26.2
 
 ### 5.2.13
 - Fix chunks sometimes not rendering after teleport with Sodium

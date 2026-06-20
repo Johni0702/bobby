@@ -55,7 +55,7 @@ public class FakeChunk extends LevelChunk {
         for (int y = getMinSectionY(); y < getMaxSectionY(); y++) {
             updateTaintedState(blockLightProvider, x, y, z, blockDelta);
             updateTaintedState(skyLightProvider, x, y, z, skyDelta);
-            worldRenderer.setSectionDirtyWithNeighbors(x, y, z);
+            client.levelExtractor.setSectionDirtyWithNeighbors(x, y, z);
         }
     }
 

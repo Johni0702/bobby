@@ -373,7 +373,7 @@ public class FakeChunkManager {
     public void load(int x, int z, LevelChunk chunk) {
         fakeChunks.put(ChunkPos.pack(x, z), chunk);
 
-        loadEmptySectionsOfFakeChunk(x, z, chunk);
+        markAsLoaded(x, z, chunk);
         world.onChunkLoaded(new ChunkPos(x, z));
 
         for (int i = world.getMinSectionY(); i < world.getMaxSectionY(); i++) {
@@ -383,13 +383,36 @@ public class FakeChunkManager {
         clientChunkCacheExt.bobby_onFakeChunkAdded(x, z);
     }
 
-    public void loadEmptySectionsOfFakeChunk(int x, int z, LevelChunk chunk) {
-        LongOpenHashSet emptySections = clientChunkManager.getLoadedEmptySections();
+    public void markAsLoaded(int x, int z, LevelChunk chunk) {
+        clientChunkManager.addedLoadedChunks().add(new ChunkPos(x, z).pack());
+        clientChunkManager.removedLoadedChunks().remove(new ChunkPos(x, z).pack());
+
+        LongOpenHashSet addedEmptySections = clientChunkManager.addedEmptySections();
+        LongOpenHashSet removedEmptySections = clientChunkManager.removedEmptySections();
         LevelChunkSection[] chunkSections = chunk.getSections();
         for (int i = 0; i < chunkSections.length; i++) {
             LevelChunkSection chunkSection = chunkSections[i];
+            long sectionPos = SectionPos.asLong(x, chunk.getSectionYFromSectionIndex(i), z);
             if (chunkSection.hasOnlyAir()) {
-                emptySections.add(SectionPos.asLong(x, chunk.getSectionYFromSectionIndex(i), z));
+                addedEmptySections.add(sectionPos);
+                removedEmptySections.remove(sectionPos);
+            }
+        }
+    }
+
+    private void markAsUnloaded(int x, int z, LevelChunk chunk) {
+        clientChunkManager.removedLoadedChunks().add(new ChunkPos(x, z).pack());
+        clientChunkManager.addedLoadedChunks().remove(new ChunkPos(x, z).pack());
+
+        LongOpenHashSet removedEmptySections = clientChunkManager.removedEmptySections();
+        LongOpenHashSet addedEmptySections = clientChunkManager.addedEmptySections();
+        LevelChunkSection[] chunkSections = chunk.getSections();
+        for (int i = 0; i < chunkSections.length; i++) {
+            LevelChunkSection chunkSection = chunkSections[i];
+            long sectionPos = SectionPos.asLong(x, chunk.getSectionYFromSectionIndex(i), z);
+            if (chunkSection.hasOnlyAir()) {
+                removedEmptySections.add(sectionPos);
+                addedEmptySections.remove(sectionPos);
             }
         }
     }
@@ -433,11 +456,7 @@ public class FakeChunkManager {
             } else {
                 unloadLightData.run();
 
-                LongOpenHashSet emptySections = clientChunkManager.getLoadedEmptySections();
-                LevelChunkSection[] chunkSections = chunk.getSections();
-                for (int i = 0; i < chunkSections.length; i++) {
-                    emptySections.remove(SectionPos.asLong(x, chunk.getSectionYFromSectionIndex(i), z));
-                }
+                markAsUnloaded(x, z, chunk);
             }
 
             clientChunkCacheExt.bobby_onFakeChunkRemoved(x, z, willBeReplaced);

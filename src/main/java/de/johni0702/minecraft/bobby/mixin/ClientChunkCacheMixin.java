@@ -179,7 +179,7 @@ public abstract class ClientChunkCacheMixin implements ClientChunkCacheExt {
 
         for (LevelChunk chunk : bobbyChunkManager.getFakeChunks()) {
             ChunkPos pos = chunk.getPos();
-            bobbyChunkManager.loadEmptySectionsOfFakeChunk(pos.x(), pos.z(), chunk);
+            bobbyChunkManager.markAsLoaded(pos.x(), pos.z(), chunk);
         }
     }
 

@@ -90,7 +90,7 @@ public class UpgradeCommand implements Command<FabricClientCommandSource> {
                 nextReport = now.plus(3, ChronoUnit.SECONDS);
 
                 Component text = Component.translatable("bobby.upgrade.progress", this.done, this.total, this.worldIndex + 1, this.totalWorlds);
-                client.execute(() -> client.gui.getChat().addClientSystemMessage(text));
+                client.execute(() -> client.gui.hud.getChat().addClientSystemMessage(text));
             }
         }
     }
