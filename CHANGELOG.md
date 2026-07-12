@@ -1,3 +1,6 @@
+### 5.2.4.1
+- Fix malicious server being able to overwrite local worlds if it can guess their names (thanks to Reginald Gillespie for reporting!)
+
 ### 5.2.4
 - Add support for Sodium 0.6.0 (#308)
 
