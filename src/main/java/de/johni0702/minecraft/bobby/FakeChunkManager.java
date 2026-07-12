@@ -5,6 +5,7 @@ import de.johni0702.minecraft.bobby.ext.ClientChunkManagerExt;
 import de.johni0702.minecraft.bobby.ext.LightingProviderExt;
 import de.johni0702.minecraft.bobby.mixin.BiomeAccessAccessor;
 import de.johni0702.minecraft.bobby.mixin.ClientWorldAccessor;
+import de.johni0702.minecraft.bobby.util.FileSystemUtils;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
@@ -91,9 +92,9 @@ public class FakeChunkManager {
                 .toPath()
                 .resolve(".bobby")
                 .resolve(getCurrentWorldOrServerName(((ClientWorldAccessor) world).getNetworkHandler()))
-                .resolve(seedHash + "")
-                .resolve(worldId.getNamespace())
-                .resolve(worldId.getPath());
+                .resolve(seedHash + "");
+        storagePath = FileSystemUtils.resolveChild(storagePath, worldId.getNamespace());
+        storagePath = FileSystemUtils.resolveChild(storagePath, worldId.getPath());
 
         storage = FakeChunkStorage.getFor(storagePath, true);
 

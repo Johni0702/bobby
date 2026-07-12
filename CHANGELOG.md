@@ -1,3 +1,6 @@
+### 5.0.1.1
+- Fix malicious server being able to overwrite local worlds if it can guess their names (thanks to Reginald Gillespie for reporting!)
+
 ### 5.0.1
 - Update to Sodium 0.5
 
