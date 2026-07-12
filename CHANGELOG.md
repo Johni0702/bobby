@@ -1,4 +1,4 @@
-### 5.2.15-SNAPSHOT
+### 5.2.15
 - Fix malicious server being able to overwrite local worlds if it can guess their names (thanks to Reginald Gillespie for reporting!)
 
 ### 5.2.14
