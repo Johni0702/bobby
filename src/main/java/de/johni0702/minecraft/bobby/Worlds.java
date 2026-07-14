@@ -31,6 +31,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.ReportedNbtException;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
@@ -945,7 +946,7 @@ public class Worlds implements AutoCloseable {
         if (Files.exists(metaFile)) {
             try (InputStream in = Files.newInputStream(metaFile)) {
                 return NbtIo.readCompressed(in, NbtAccounter.unlimitedHeap());
-            } catch (IOException e) {
+            } catch (IOException | ReportedNbtException e) {
                 LOGGER.error("Failed to read " + metaFile, e);
             }
         }
@@ -1489,7 +1490,7 @@ public class Worlds implements AutoCloseable {
             Path file = world.regionFile(regionPos);
             try {
                 result = Region.read(file, regionPos);
-            } catch (IOException e) {
+            } catch (IOException | ReportedNbtException e) {
                 LOGGER.error("Failed to load " + file, e);
             } finally {
                 if (result == null) {
