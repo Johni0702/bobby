@@ -178,3 +178,13 @@ val publishAll by tasks.registering {
 	dependsOn(tasks.githubRelease)
 	dependsOn(tasks.modrinth)
 }
+
+// Fix Gradle 9 strict task dependency validation for Fabric Loom
+tasks.named("compileJava") {
+	dependsOn("genSourcesWithVineflower")
+}
+
+// Bobby also has a 'sodium06' source set, so we should fix that one too
+tasks.matching { it.name == "compileSodium06Java" }.configureEach {
+	dependsOn("genSourcesWithVineflower")
+}
