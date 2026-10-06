@@ -2,7 +2,7 @@ plugins {
 	id("net.fabricmc.fabric-loom") version "1.15.5"
 	id("maven-publish")
 	id("com.github.breadmoirai.github-release") version "2.2.12"
-	id("com.matthewprenger.cursegradle") version "1.4.0"
+	id("me.modmuss50.mod-publish-plugin") version "2.2.1"
 	id("com.modrinth.minotaur") version "2.+"
 	id("elect86.gik") version "0.0.4"
 }
@@ -128,33 +128,21 @@ githubRelease {
 	body(readChangelog())
 }
 
-curseforge {
-	// Would prefer to use lazy `project.property` but https://github.com/matthewprenger/CurseGradle/issues/32
-	apiKey = project.findProperty("curseforge.token") as String? ?: "DUMMY"
-	project(closureOf<com.matthewprenger.cursegradle.CurseProject> {
-		id = project.property("curseforge.id") as String
-		changelog = readChangelog()
-		releaseType = "release"
-		mainArtifact(tasks.jar.flatMap { it.archiveFile }, closureOf<com.matthewprenger.cursegradle.CurseArtifact> {
-			relations(closureOf<com.matthewprenger.cursegradle.CurseRelation> {
-				embeddedLibrary("confabricate")
-				optionalDependency("cloth-config")
-				optionalDependency("modmenu")
-				optionalDependency("sodium")
-			})
-		})
-		addGameVersion("Fabric")
-		addGameVersion(minecraftVersion)
-		addGameVersion("Java 25")
-	})
-	options(closureOf<com.matthewprenger.cursegradle.Options> {
-		javaVersionAutoDetect = false
-		javaIntegration = false
-		forgeGradleIntegration = false
-	})
-}
-tasks.withType<com.matthewprenger.cursegradle.CurseUploadTask> {
-	dependsOn(tasks.jar)
+publishMods {
+	file.set(tasks.jar.flatMap { it.archiveFile })
+	displayName.set("Bobby $modVersion for Minecraft $minecraftVersion")
+	changelog.set(readChangelog())
+	type.set(STABLE)
+	modLoaders.add("fabric")
+	curseforge {
+		projectId.set(providers.gradleProperty("curseforge.id"))
+		accessToken.set(providers.gradleProperty("curseforge.token"))
+		minecraftVersions.add(minecraftVersion)
+		javaVersions.add(JavaVersion.VERSION_25)
+		client.set(true)
+		embeds("confabricate")
+		optional("cloth-config", "modmenu", "sodium")
+	}
 }
 
 tasks.modrinth {
@@ -174,7 +162,7 @@ modrinth {
 }
 
 val publishAll by tasks.registering {
-	dependsOn(tasks.curseforge)
+	dependsOn(tasks.publishMods)
 	dependsOn(tasks.githubRelease)
 	dependsOn(tasks.modrinth)
 }
