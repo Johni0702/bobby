@@ -1,4 +1,4 @@
-### 5.2.16-SNAPSHOT
+### 5.2.16
 - Update to Minecraft 26.3
 
 ### 5.2.15
