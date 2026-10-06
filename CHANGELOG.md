@@ -1,3 +1,6 @@
+### 5.2.16-SNAPSHOT
+- Update to Minecraft 26.3
+
 ### 5.2.15
 - Fix malicious server being able to overwrite local worlds if it can guess their names (thanks to Reginald Gillespie for reporting!)
 

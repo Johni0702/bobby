@@ -344,16 +344,16 @@ public class ChunkSerializer {
         LevelLightEngine lightingProvider = world.getChunkSource().getLightEngine();
         ClientboundLightUpdatePacketData initialLightData = WorldChunkExt.get(original).bobby_getInitialLightData();
         if (initialLightData != null) {
-            Iterator<byte[]> blockNibbles = initialLightData.getBlockUpdates().iterator();
-            Iterator<byte[]> skyNibbles = initialLightData.getSkyUpdates().iterator();
+            Iterator<byte[]> blockNibbles = initialLightData.blockUpdates().iterator();
+            Iterator<byte[]> skyNibbles = initialLightData.skyUpdates().iterator();
             for (int y = lightingProvider.getMinLightSection(), i = 0; y < lightingProvider.getMaxLightSection(); y++, i++) {
-                boolean hasBlockData = initialLightData.getBlockYMask().get(i);
-                boolean isBlockZero = initialLightData.getEmptyBlockYMask().get(i);
+                boolean hasBlockData = initialLightData.blockYMask().get(i);
+                boolean isBlockZero = initialLightData.emptyBlockYMask().get(i);
                 if (hasBlockData || isBlockZero) {
                     blockLight[i] = hasBlockData ? new DataLayer(blockNibbles.next().clone()) : new DataLayer();
                 }
-                boolean hasSkyData = initialLightData.getSkyYMask().get(i);
-                boolean isSkyZero = initialLightData.getEmptySkyYMask().get(i);
+                boolean hasSkyData = initialLightData.skyYMask().get(i);
+                boolean isSkyZero = initialLightData.emptySkyYMask().get(i);
                 if (hasSkyData || isSkyZero) {
                     skyLight[i] = hasSkyData ? new DataLayer(skyNibbles.next().clone()) : new DataLayer();
                 }

@@ -84,7 +84,7 @@ public abstract class ClientChunkCacheMixin implements ClientChunkCacheExt {
     }
 
     @Inject(method = "replaceWithPacketData", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/multiplayer/ClientChunkCache$Storage;getIndex(II)I"))
-    private void bobbyUnloadFakeChunk(int x, int z, FriendlyByteBuf buf, Map<Heightmap.Types, long[]> heightmaps, Consumer<ClientboundLevelChunkPacketData.BlockEntityTagOutput> consumer, CallbackInfoReturnable<LevelChunk> cir) {
+    private void bobbyUnloadFakeChunk(int x, int z, ClientboundLevelChunkPacketData data, CallbackInfoReturnable<LevelChunk> cir) {
         if (bobbyChunkManager == null) {
             return;
         }
