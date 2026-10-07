@@ -31,6 +31,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.NbtAccounter;
 import net.minecraft.nbt.NbtIo;
+import net.minecraft.nbt.ReportedNbtException;
 import net.minecraft.nbt.Tag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
@@ -145,7 +146,19 @@ public class Worlds implements AutoCloseable {
         this.directory = directory;
         this.metaFile = metaFile(directory);
 
-        load(readFromDisk());
+        CompoundTag root = readFromDisk();
+        if (root == null) {
+            load(null);
+        } else {
+            try {
+                load(root);
+            } catch (RuntimeException e) {
+                discardCorruptMetadata(metaFile, e);
+                worlds.clear();
+                outdatedWorlds.clear();
+                load(null);
+            }
+        }
 
         if (!outdatedWorlds.isEmpty()) {
             Component text = translatable("bobby.upgrade.required");
@@ -945,11 +958,20 @@ public class Worlds implements AutoCloseable {
         if (Files.exists(metaFile)) {
             try (InputStream in = Files.newInputStream(metaFile)) {
                 return NbtIo.readCompressed(in, NbtAccounter.unlimitedHeap());
-            } catch (IOException e) {
-                LOGGER.error("Failed to read " + metaFile, e);
+            } catch (IOException | ReportedNbtException e) {
+                discardCorruptMetadata(metaFile, e);
             }
         }
         return null;
+    }
+
+    private static void discardCorruptMetadata(Path file, Exception cause) {
+        try {
+            Files.deleteIfExists(file);
+        } catch (IOException e) {
+            cause.addSuppressed(e);
+        }
+        LOGGER.error("Failed to read " + file + ", discarding it", cause);
     }
 
     private void writeToDisk(CompoundTag nbt) throws IOException {
@@ -1417,6 +1439,12 @@ public class Worlds implements AutoCloseable {
             long[] chunkAges = root.getLongArray("chunk_ages").orElseGet(() -> new long[0]);
             long[] chunkFingerprints = root.getLongArray("chunk_fingerprints").orElseGet(() -> new long[0]);
 
+            if (chunkCoords.length != chunkAges.length || chunkCoords.length != chunkFingerprints.length) {
+                throw new IOException("Invalid region metadata: chunk array lengths differ (coords="
+                        + chunkCoords.length + ", ages=" + chunkAges.length
+                        + ", fingerprints=" + chunkFingerprints.length + ")");
+            }
+
             Region region = new Region();
             region.chunks.putAll(new Long2LongArrayMap(chunkCoords, chunkAges));
             region.chunkFingerprints.putAll(new Long2LongArrayMap(chunkCoords, chunkFingerprints));
@@ -1489,8 +1517,8 @@ public class Worlds implements AutoCloseable {
             Path file = world.regionFile(regionPos);
             try {
                 result = Region.read(file, regionPos);
-            } catch (IOException e) {
-                LOGGER.error("Failed to load " + file, e);
+            } catch (IOException | ReportedNbtException | IllegalArgumentException e) {
+                discardCorruptMetadata(file, e);
             } finally {
                 if (result == null) {
                     result = new Region();

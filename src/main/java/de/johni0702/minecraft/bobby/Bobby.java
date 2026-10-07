@@ -29,6 +29,7 @@ import org.spongepowered.configurate.reference.WatchServiceListener;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -54,15 +55,21 @@ public class Bobby implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        Path configPath = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".conf");
         try {
-            Path configPath = FabricLoader.getInstance().getConfigDir().resolve(MOD_ID + ".conf");
             @SuppressWarnings("resource") // we'll keep this around for the entire lifetime of our mod
             ConfigurationReference<CommentedConfigurationNode> rootRef = getOrCreateWatchServiceListener()
                     .listenToConfiguration(path -> HoconConfigurationLoader.builder().path(path).build(), configPath);
             configReference = rootRef.referenceTo(BobbyConfig.class);
             rootRef.saveAsync();
         } catch (IOException e) {
-            e.printStackTrace();
+            Path corruptConfigPath = configPath.resolveSibling(configPath.getFileName() + ".corrupt");
+            try {
+                Files.move(configPath, corruptConfigPath, StandardCopyOption.REPLACE_EXISTING);
+            } catch (IOException moveException) {
+                e.addSuppressed(moveException);
+            }
+            LOGGER.error("Failed to initialize Bobby configuration at " + configPath + ", using defaults", e);
         }
 
         ClientCommandRegistrationCallback.EVENT.register(((dispatcher, registryAccess) ->
@@ -79,8 +86,10 @@ public class Bobby implements ClientModInitializer {
 
         FlawlessFrames.onClientInitialization();
 
-        configReference.subscribe(new TaintChunksConfigHandler()::update);
-        configReference.subscribe(new MaxRenderDistanceConfigHandler()::update);
+        if (configReference != null) {
+            configReference.subscribe(new TaintChunksConfigHandler()::update);
+            configReference.subscribe(new MaxRenderDistanceConfigHandler()::update);
+        }
 
         Util.ioPool().execute(this::cleanupOldWorlds);
     }
@@ -97,7 +106,7 @@ public class Bobby implements ClientModInitializer {
     }
 
     public Screen createConfigScreen(Screen parent) {
-        if (FabricLoader.getInstance().isModLoaded("cloth-config2")) {
+        if (FabricLoader.getInstance().isModLoaded("cloth-config2") && configReference != null) {
             return BobbyConfigScreenFactory.createConfigScreen(parent, getConfig(), configReference::setAndSaveAsync);
         }
         return null;
