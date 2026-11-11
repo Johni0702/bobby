@@ -2,6 +2,7 @@ package de.johni0702.minecraft.bobby.mixin;
 
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import de.johni0702.minecraft.bobby.ext.GameRendererExt;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.fog.FogRenderer;
@@ -21,7 +22,7 @@ public abstract class LevelRendererMixin {
 
     @ModifyArg(method = "render", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;addSkyPass(Lcom/mojang/blaze3d/framegraph/FrameGraphBuilder;Lnet/minecraft/client/renderer/state/level/CameraRenderState;Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;)V"))
     private GpuBufferSlice clampMaxValue(GpuBufferSlice fogBuffer) {
-        if (levelRenderState.cameraRenderState.fogData.renderDistanceEnd >= 32 * 16) {
+        if (Minecraft.getInstance().options.getEffectiveRenderDistance() >= 32) {
             fogBuffer = ((GameRendererExt) gameRenderer).bobby_getSkyFogRenderer().getBuffer(FogRenderer.FogMode.WORLD);
         }
         return fogBuffer;
